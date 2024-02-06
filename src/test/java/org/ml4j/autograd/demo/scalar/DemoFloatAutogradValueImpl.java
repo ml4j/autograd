@@ -35,7 +35,7 @@ public class DemoFloatAutogradValueImpl extends AutogradValueImpl<DemoAutogradVa
 
     }
 
-    protected DemoFloatAutogradValueImpl(AutogradValueProperties<DemoSize> properties, Supplier<Float> data) {
+    public DemoFloatAutogradValueImpl(AutogradValueProperties<DemoSize> properties, Supplier<Float> data) {
 		super(properties, data);
 	}
 
