@@ -58,8 +58,12 @@ public class AutogradDemo {
         g = g.add(createGradValue(10.0f, false).div(f));
 
         System.out.println(g.data().get()); // Prints 24.704082, the outcome of this forward pass
+
+        // Perform a backward pass
         g.backward();
+        
         System.out.println(a.grad().data().get()); // Prints 138.83382, i.e. the numerical value of dg/da
+
         System.out.println(b.grad().data().get()); // Prints 645.5772, i.e. the numerical value of dg/db
 
     }
