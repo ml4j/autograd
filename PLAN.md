@@ -15,7 +15,7 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Introduce computation-node and local propagation contracts.
 - [x] Introduce the non-mutating `Accumulatable` contract.
 - [x] Introduce the gradient-state `GradNode` contract.
-- [ ] Introduce `AutogradValue` to connect the agreed contracts.
+- [x] Introduce `AutogradValue` to connect the agreed contracts.
 - [ ] Implement and test the node and gradient contracts.
 - [ ] Implement scalar operations and backward traversal.
 - [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
@@ -86,7 +86,21 @@ Status: complete. Added the interface and matching specification. The standalone
 `./mvnw -o verify` build passed, including all four existing tests. No implementation
 or dependencies were added.
 
+## Completed increment: autograd-value contract
+
+Introduce only `org.ml4j.autograd.AutogradValue<V, D, C>`, connecting numerical values,
+computation nodes, gradient state, and graph-wide backward entry points.
+
+- Extend `Value<D, C>` and `Accumulatable<V>` with a concrete self-type bound.
+- Document node access, stable gradient handles, gradient requirements, and backward seeds.
+- Record repeated-pass, derivative-graph, and local-versus-global backward semantics in `SPEC.md`.
+- Add no implementation or dependencies; validate the standalone wrapper build.
+
+Status: complete. The interface and specification agree. The standalone
+`./mvnw -o verify` build passed with all four existing tests. No implementation
+or dependencies were added.
+
 ## Next increment
 
-Review and introduce `AutogradValue` when requested, connecting numerical values,
-computation nodes, gradient state, and graph-wide backward entry points.
+Review the first node implementation and its tests when requested. Implementations
+must preserve the recorded contracts; no further code is authorised by this plan alone.

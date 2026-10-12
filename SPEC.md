@@ -17,7 +17,7 @@ validation scope, not a restriction on numerical data types.
 ## Current state
 
 The repository contains standalone build infrastructure, the documented `Value`,
-`ValueNode`, `Accumulatable`, and `GradNode` interfaces, and the immutable scalar implementation
+`ValueNode`, `Accumulatable`, `GradNode`, and `AutogradValue` interfaces, and the immutable scalar implementation
 `FloatValue` with tests.
 No computation-node implementation has been introduced yet.
 
@@ -164,8 +164,48 @@ void reset();
 - The accumulator has no graph-input or backward-execution responsibilities. A
   differentiable gradient value can have its own computation node.
 
+## Agreed interface: `org.ml4j.autograd.AutogradValue<V, D, C>`
+
+Purpose: connect numerical values to their computation and gradient nodes and provide
+graph-wide backward entry points. Extends `Value<D, C>` and `Accumulatable<V>`, with
+the self-type bound `V extends AutogradValue<V, D, C>`. Gradients use the same concrete
+value type, so gradient expressions can have their own computation graphs.
+
+```java
+ValueNode<V> valueNode();
+GradNode<V> gradNode();
+boolean requiresGrad();
+void backward(V gradient);
+void backward();
+```
+
+- `valueNode()` returns a non-null node representing this value and its inputs.
+- `gradNode()` returns the same non-null gradient node throughout the value's lifetime,
+  including reset and backward passes. Stored gradient values may change; previously
+  returned expressions are neither refreshed nor mutated by replacement.
+- `requiresGrad()` requests gradient calculation, independently of gradient availability.
+  Constants may have computation nodes, but receive no contributions from a backward pass.
+- `backward(gradient)` takes a non-null seed compatible with the result's data/context.
+  Tensor seed compatibility follows the numerical implementation's rules.
+- Traversal visits reachable nodes once by identity, running local callbacks after all
+  downstream contributions arrive. Repeated operand positions contribute separately.
+- Each pass propagates only new contributions. Leaves are nodes with no inputs; their
+  gradients accumulate across passes. Intermediate gradients are replaced. Callers reset
+  leaf gradient nodes explicitly to discard previous contributions.
+- Gradient computations retain differentiable dependencies for higher derivatives.
+  A constant derivative expression need not itself require gradients.
+- A null explicit seed causes `NullPointerException`. A root not requiring gradients,
+  or a cyclic graph, causes `IllegalStateException`. Callback failures can leave partial
+  gradient updates; no graph-wide rollback is guaranteed.
+- Passes execute sequentially; concurrent execution over shared values is unsupported.
+- `backward()` uses the numerical type's implicit seed (one for float scalars).
+  Tensor seed policies are type-specific. Types with no implicit seed throw
+  `UnsupportedOperationException` and require explicit seeds.
+- Inherited addition follows the existing `Accumulatable` contract; inherited data
+  access and context stability follow the existing `Value` contract.
+
 ## Decisions still to finalise
 
-Review and document how autograd values connect the nodes and coordinate backward
-passes as their interfaces are introduced. Earlier
-proof-of-concept designs are candidates to evaluate, not requirements to copy wholesale.
+Concrete operation rules, tensor shape/seed policies, and numerical compatibility
+validation remain to be specified as implementations are introduced. Earlier
+proof-of-concept implementations are reference material, not code to copy wholesale.
