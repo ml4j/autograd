@@ -11,7 +11,7 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Standalone Maven setup and wrapper.
 - [x] Initial agent instructions, specification, and plan.
 - [x] Introduce the numerical value/data-access contract.
-- [ ] Implement and test basic data access.
+- [x] Implement and test basic data access.
 - [ ] Introduce and test gradient combination and state contracts.
 - [ ] Introduce computation-node and local propagation contracts.
 - [ ] Implement scalar operations and backward traversal.
@@ -30,6 +30,21 @@ Introduce `org.ml4j.autograd.Value<D, C>` with the agreed data-access contract.
 Status: complete. Added the interface and matching specification; the standalone
 `./mvnw -o verify` build passed. No implementation, tests, or dependencies were added.
 
+## Completed increment: scalar data access
+
+Implement `org.ml4j.autograd.scalar.FloatValue` as a final, immutable implementation
+of `Value<Float, Void>` constructed from a primitive float.
+
+- Return a supplier of the stored scalar; return null context because no metadata is needed.
+- Document usage and stability without adding mutation, operations, or graph functionality.
+- Add JUnit as a test-only dependency and test repeated reads, independent values,
+  absent context, and floating-point boundary values.
+- Validate the standalone build with `./mvnw verify`.
+
+Status: complete. The standalone `./mvnw -o verify` build passed with four tests.
+The agreed `Value` interface contract remains unchanged.
+
 ## Next increment
 
-Implement and test basic data access against the agreed `Value` contract when requested.
+Review the gradient-combination contract before introducing another interface,
+when requested. No subsequent increment is authorised by this plan alone.

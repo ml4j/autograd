@@ -17,7 +17,7 @@ validation scope, not a restriction on numerical data types.
 ## Current state
 
 The repository contains standalone build infrastructure and the documented `Value`
-interface. No library implementation has been introduced yet.
+interface and its immutable scalar implementation, `FloatValue`, with data-access tests.
 
 ## Interface decisions and change control
 
@@ -69,6 +69,15 @@ C context();
 - `context()` does not evaluate numerical data. It may return null only when no
   additional metadata is needed; `Void` is the intended context type for such values.
 - The contract provides no mutation, cache invalidation, gradient, graph, or naming operations.
+
+## Implementation: `org.ml4j.autograd.scalar.FloatValue`
+
+- A final class implementing `Value<Float, Void>`, constructed with a primitive float.
+- Stores fixed scalar data; its supplier returns that data without a mutation API.
+- Uses null context because the scalar needs no additional metadata.
+- Accepts all primitive float values, including signed zero, infinities, and NaN.
+- Tests demonstrate stable repeated data access, independent values, absent context,
+  and preservation of floating-point boundary values.
 
 ## Decisions still to finalise
 
