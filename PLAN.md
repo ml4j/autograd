@@ -181,7 +181,21 @@ Status: complete. Added backward execution and seven focused tests. The standalo
 `./mvnw -o verify` build passed with all thirty-seven tests. The demo shows an absent
 constant gradient and a tracked gradient of 1.0. Interface contracts remain unchanged.
 
+## Completed increment: binary derivative contract and callback construction
+
+Introduce `org.ml4j.autograd.operators.BinaryGradient<V>` and generalise local binary callbacks.
+
+- Document explicit incoming-gradient, left-operand, and right-operand parameters in Javadoc and SPEC.md.
+- Pass left/right derivative rules into `applyBinaryOperator`, which installs the shared callback.
+- Keep addition's two unit-derivative rules and existing propagation behaviour unchanged.
+- Test dispatch and distinct operand contributions without adding multiplication.
+- Validate the standalone build; add no dependencies or other operations.
+
+Status: complete. Added the interface, matching specification, shared callback construction,
+and two dispatch tests. The standalone `./mvnw -o verify` build passed with all
+thirty-nine tests. Existing addition behaviour and interface contracts are unchanged.
+
 ## Next increment
 
-Review the `BinaryGradient` contract and generic binary derivative-rule construction
-before adding multiplication and higher-derivative validation when requested.
+Introduce scalar multiplication and validate first derivatives and Hessian-vector
+products when requested. No further operations are authorised by this plan alone.

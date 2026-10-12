@@ -17,7 +17,8 @@ validation scope, not a restriction on numerical data types.
 ## Current state
 
 The repository contains standalone build infrastructure, the documented `Value`,
-`ValueNode`, `Accumulatable`, `GradNode`, and `AutogradValue` interfaces, and the immutable scalar implementation
+`ValueNode`, `Accumulatable`, `GradNode`, `AutogradValue`, and `BinaryGradient` interfaces,
+and the immutable scalar implementation
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
@@ -250,8 +251,7 @@ void backward();
   supporting fixed or deferred stable float data with Void context. `FloatValue` is unchanged.
 - `org.ml4j.autograd.scalar.demo.FloatAutogradValueDemo` demonstrates forward addition
   and graph/gradient-state inspection, followed by a graph-wide backward pass.
-- Graph-wide backward execution is now implemented as described below. No separate
-  derivative-function interface has been added yet.
+- Graph-wide backward execution and generic binary derivative rules are implemented as described below.
 
 ## Implementation increment: local addition propagation
 
@@ -262,7 +262,7 @@ void backward();
   `GradNode` implementation without mutating shared seeds or earlier gradient expressions.
 - The callback does not seed gradients or traverse inputs. Tests seed result gradient
   nodes explicitly and invoke only `valueNode().backward()`.
-- Generic forward binary construction leaves derivative-rule installation to the operation.
+- Generic binary construction installs a shared callback using derivative rules supplied by the operation.
 - This unchanged-gradient rule is demonstrated for scalar addition. Future tensor operations
   involving broadcasting must supply appropriate gradient-shape adaptations explicitly.
 - Existing interface contracts and dependencies are unchanged.
@@ -283,6 +283,34 @@ void backward();
   updated state, as allowed by the existing non-transactional backward contract.
 - The demo now runs a scalar addition backward pass. Tests cover shared nodes, repeated
   operands, seeds, constants, resets, retained expressions, repeated passes, and cyclic graphs.
+
+## Agreed interface: `org.ml4j.autograd.operators.BinaryGradient<V>`
+
+Purpose: calculate one operand's contribution from a result's incoming gradient
+and its forward operands. Scalar addition returns the incoming gradient unchanged;
+tensor rules can adapt contributions to operand shapes.
+
+```java
+V apply(V incomingGradient, V leftOperand, V rightOperand);
+```
+
+- A functional interface with explicit non-null incoming gradient and forward operands
+  in their original order, including duplicate references. The forward result itself
+  is not passed to this rule.
+- Returns a non-null contribution compatible with the differentiated operand's data/context.
+- Does not mutate arguments or accumulate state. The caller performs accumulation.
+- Differentiable rules retain dependencies for higher derivatives; a constant derivative
+  expression need not require gradients itself.
+- Numerical compatibility and invalid-argument exception policies belong to concrete rules.
+
+## Implementation increment: shared binary backward callbacks
+
+- `applyBinaryOperator` takes left/right `BinaryGradient` rules and installs the result-value callback.
+- The callback skips constant results and absent incoming gradients, invoking only rules
+  for tracked operands. It passes the same incoming gradient and ordered operands to each rule.
+- Returned contributions are accumulated separately for both operand positions, including
+  duplicates. Addition supplies two unchanged-gradient rules; its behaviour is preserved.
+- No multiplication operation or dependencies are added in this increment.
 
 ## Decisions still to finalise
 

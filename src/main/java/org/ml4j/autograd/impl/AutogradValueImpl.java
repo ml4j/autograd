@@ -7,6 +7,7 @@ import org.ml4j.autograd.node.GradNode;
 import org.ml4j.autograd.node.ValueNode;
 import org.ml4j.autograd.node.impl.GradNodeImpl;
 import org.ml4j.autograd.node.impl.ValueNodeImpl;
+import org.ml4j.autograd.operators.BinaryGradient;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -102,44 +103,52 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      */
     @Override
     public V add(V other) {
-        V result = applyBinaryOperator(other, this::addData, this::mapContext);
+        return applyBinaryOperator(other, this::addData,
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
+                this::mapContext);
+    }
+
+    /**
+     * Constructs a lazy binary result and installs its local backward callback.
+     *
+     * <p>The context mapper runs once at construction; numerical evaluation is deferred.
+     * Scalar operands may have no context; tensor implementations map compatible shapes.
+     * The node callback receives the forward result value and extracts its gradient
+     * before invoking the separate left/right derivative rules.
+     *
+     * @param other the right operand
+     * @param forward the numerical operation
+     * @param leftGradient the left operand's contribution rule
+     * @param rightGradient the right operand's contribution rule
+     * @param contextMapper maps operand metadata to output metadata
+     * @return the concrete result, requiring gradients if either operand does
+     */
+    protected final V applyBinaryOperator(V other, BinaryOperator<D> forward,
+                                          BinaryGradient<V> leftGradient, BinaryGradient<V> rightGradient,
+                                          BinaryOperator<C> contextMapper) {
+        Objects.requireNonNull(other, "other");
+        Objects.requireNonNull(forward, "forward");
+        Objects.requireNonNull(leftGradient, "leftGradient");
+        Objects.requireNonNull(rightGradient, "rightGradient");
+        Objects.requireNonNull(contextMapper, "contextMapper");
+        C outputContext = contextMapper.apply(context(), other.context());
+        V result = createAutogradValue(() -> forward.apply(data().get(), other.data().get()),
+                outputContext, requiresGrad() || other.requiresGrad(), List.of(valueNode(), other.valueNode()));
         result.valueNode().setBackwardFunction(resultValue -> {
             if (!resultValue.requiresGrad()) {
                 return;
             }
             resultValue.gradNode().gradient().ifPresent(incomingGradient -> {
-                // Addition has unit partial derivatives: each tracked operand receives the seed.
                 if (requiresGrad()) {
-                    gradNode().accumulate(incomingGradient);
+                    gradNode().accumulate(leftGradient.apply(incomingGradient, self(), other));
                 }
                 if (other.requiresGrad()) {
-                    // Do not deduplicate: x.add(x) contributes once for each operand position.
-                    other.gradNode().accumulate(incomingGradient);
+                    // Duplicate operands still have two derivative rules and two contributions.
+                    other.gradNode().accumulate(rightGradient.apply(incomingGradient, self(), other));
                 }
             });
         });
-        return result;
-    }
-
-    /**
-     * Constructs a forward binary result with mapped context and ordered dependencies.
-     *
-     * <p>The context mapper runs once at construction; numerical evaluation is deferred.
-     * Scalar operands may have no context; tensor implementations map compatible shapes.
-     *
-     * @param other the right operand
-     * @param forward the numerical operation
-     * @param contextMapper maps operand metadata to output metadata
-     * @return the concrete result, requiring gradients if either operand does
-     */
-    protected final V applyBinaryOperator(V other, BinaryOperator<D> forward, BinaryOperator<C> contextMapper) {
-        Objects.requireNonNull(other, "other");
-        Objects.requireNonNull(forward, "forward");
-        Objects.requireNonNull(contextMapper, "contextMapper");
-        C outputContext = contextMapper.apply(context(), other.context());
-        V result = createAutogradValue(() -> forward.apply(data().get(), other.data().get()),
-                outputContext, requiresGrad() || other.requiresGrad(), List.of(valueNode(), other.valueNode()));
-        // The concrete operation installs its local derivative rule after forward construction.
         return result;
     }
 
