@@ -22,9 +22,9 @@ and the immutable scalar implementation
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
-`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition, local propagation,
-and graph-wide backward execution. A runnable scalar demo shows the graph structure
-and gradients. Multiplication and higher-derivative numerical validation remain future work.
+`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition and multiplication,
+local propagation, and graph-wide backward execution. Tests and the scalar demo
+validate first derivatives, retained gradient expressions, and Hessian-vector products.
 
 ## Interface decisions and change control
 
@@ -311,6 +311,23 @@ V apply(V incomingGradient, V leftOperand, V rightOperand);
 - Returned contributions are accumulated separately for both operand positions, including
   duplicates. Addition supplies two unchanged-gradient rules; its behaviour is preserved.
 - No multiplication operation or dependencies are added in this increment.
+
+## Implementation increment: scalar multiplication and higher derivatives
+
+- `FloatAutogradValue.mul(FloatAutogradValue other)` returns a lazy product, with
+  ordered input nodes and the combined gradient requirement. Null operands are rejected.
+- The left contribution is `incomingGradient.mul(rightOperand)`; the right contribution
+  is `incomingGradient.mul(leftOperand)`. The shared binary callback handles accumulation,
+  constants, and duplicate operands. Forward data and earlier expressions are not mutated.
+- Derivative rules use differentiable value operations so their expressions retain
+  dependencies for higher derivatives. The default scalar seed remains one.
+- Tests cover seeds, constant positions, zero derivatives, repeated operands, shared
+  branches, repeated passes, reset, and differentiation of retained gradient expressions.
+- For `z = x*x + y*x + y*y` at `(0.5, 0.6)`, first derivatives are `(1.6, 1.7)` and
+  the Hessian-vector product for `(2, 1)` is `(5, 4)`. Without leaf reset, stored totals
+  are `(6.6, 5.7)`. The scalar demo demonstrates the reset version.
+- Existing interfaces and dependencies are unchanged. Tensor multiplication remains
+  a separate numerical implementation decision, not inferred from scalar multiplication.
 
 ## Decisions still to finalise
 

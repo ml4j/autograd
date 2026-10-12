@@ -18,10 +18,32 @@ import java.util.function.Supplier;
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
  * subclass, numerical addition is ordinary float addition. Forward results are lazy;
- * supplied numerical data must remain stable. Addition supports local and graph-wide
- * propagation; the implicit scalar seed is one.
+ * supplied numerical data must remain stable. Addition and multiplication support
+ * local and graph-wide propagation; the implicit scalar seed is one.
  */
 public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradValue, Float, Void> {
+
+    /**
+     * Returns the product of this scalar and another scalar.
+     *
+     * <p>Multiplying 2 by 3 produces 6. With an incoming gradient of one, the left
+     * operand receives a contribution of 3 and the right receives 2.
+     *
+     * <p>Numerical evaluation is deferred. The result records both operands in order
+     * and requires gradients if either operand does. Neither operand is mutated.
+     * Contributions are incoming-gradient times the opposite operand, retaining
+     * differentiable graphs for higher derivatives. Repeated operands contribute twice.
+     *
+     * @param other the non-null right scalar operand
+     * @return the lazy multiplication result
+     * @throws NullPointerException if other is null
+     */
+    public FloatAutogradValue mul(FloatAutogradValue other) {
+        return applyBinaryOperator(other, (left, right) -> left * right,
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(rightOperand),
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(leftOperand),
+                this::mapContext);
+    }
 
     /**
      * Creates a scalar leaf from fixed numerical data.

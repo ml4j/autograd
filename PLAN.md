@@ -19,7 +19,7 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Implement and test the value-node contract.
 - [x] Implement and test the gradient-state contract.
 - [x] Implement scalar addition and backward traversal.
-- [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
+- [x] Validate repeated passes, shared inputs, resets, and higher derivatives for scalar addition/multiplication.
 
 ## Completed increment: value contract
 
@@ -195,7 +195,22 @@ Status: complete. Added the interface, matching specification, shared callback c
 and two dispatch tests. The standalone `./mvnw -o verify` build passed with all
 thirty-nine tests. Existing addition behaviour and interface contracts are unchanged.
 
+## Completed increment: scalar multiplication and higher derivatives
+
+Introduce scalar multiplication using the existing generic binary callback construction.
+
+- Add `FloatAutogradValue.mul(other)` with left/right derivative rules and lazy numerical multiplication.
+- Record scalar multiplication behaviour in `SPEC.md`; leave existing interface contracts unchanged.
+- Test explicit seeds, constants, duplicates, shared branches, repeated passes, and first/second derivatives.
+- Extend the scalar demo with the proof-of-concept Hessian-vector example.
+- Validate the standalone build and demo; add no dependencies or other numerical operations.
+
+Status: complete. Added multiplication, seven tests, and the Hessian-vector demo.
+The standalone `./mvnw -o verify` build passed with all forty-six tests. The demo
+prints first derivatives `(1.6, 1.7)` and Hessian-vector product `(5, 4)`.
+Existing interface contracts and dependencies remain unchanged.
+
 ## Next increment
 
-Introduce scalar multiplication and validate first derivatives and Hessian-vector
-products when requested. No further operations are authorised by this plan alone.
+Review functional parity with the `autograd2` proof of concept and the current
+contracts before selecting further numerical operations or implementation refactoring.
