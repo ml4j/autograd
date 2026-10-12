@@ -21,9 +21,9 @@ The repository contains standalone build infrastructure, the documented `Value`,
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
-`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition and local addition
-propagation. A runnable demo shows forward structure. Graph-wide backward execution
-is not implemented.
+`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition, local propagation,
+and graph-wide backward execution. A runnable scalar demo shows the graph structure
+and gradients. Multiplication and higher-derivative numerical validation remain future work.
 
 ## Interface decisions and change control
 
@@ -234,7 +234,7 @@ void backward();
 - Tested with a small immutable accumulatable fixture; `FloatValue` and interface contracts
   remain unchanged. No additional dependencies were introduced.
 
-## Partial implementation: generic autograd structure and float demonstration
+## Implementation: generic autograd structure and float demonstration
 
 - `org.ml4j.autograd.impl.AutogradValueImpl<V, D, C>` owns stable value and gradient
   nodes, numerical data access, context, and gradient requirements.
@@ -249,10 +249,9 @@ void backward();
 - `org.ml4j.autograd.scalar.FloatAutogradValue` is a separate final scalar subclass,
   supporting fixed or deferred stable float data with Void context. `FloatValue` is unchanged.
 - `org.ml4j.autograd.scalar.demo.FloatAutogradValueDemo` demonstrates forward addition
-  and graph/gradient-state inspection without calling backward methods.
-- Graph-wide backward entry points still throw `UnsupportedOperationException`.
-  This temporary limitation does not revise the agreed `AutogradValue` contract.
-- No derivative-function interface or backward traversal has been added yet.
+  and graph/gradient-state inspection, followed by a graph-wide backward pass.
+- Graph-wide backward execution is now implemented as described below. No separate
+  derivative-function interface has been added yet.
 
 ## Implementation increment: local addition propagation
 
@@ -266,7 +265,24 @@ void backward();
 - Generic forward binary construction leaves derivative-rule installation to the operation.
 - This unchanged-gradient rule is demonstrated for scalar addition. Future tensor operations
   involving broadcasting must supply appropriate gradient-shape adaptations explicitly.
-- Existing interface contracts, graph-wide placeholders, and dependencies are unchanged.
+- Existing interface contracts and dependencies are unchanged.
+
+## Implementation increment: graph-wide addition backward passes
+
+- Traversal is collected before gradient state changes, using dependency-first ordering
+  and identity-based visitation. Cycles are rejected; graph inputs must represent autograd values.
+- Each pass saves earlier leaf gradient references and clears reachable gradient state,
+  seeds the output, then executes callbacks in reverse dependency order. Only tracked
+  nodes with an incoming gradient run their callback.
+- Previous leaf contributions are added back only after propagation, so they cannot be
+  propagated again. Intermediate gradients belong only to the current pass. Saved expressions
+  are not mutated; typed restoration actions avoid unchecked casts for gradient accumulation.
+- The base implementation supports explicit seeds and provides an overridable implicit-seed
+  hook. Types without an implicit seed require explicit seeds. The float subclass supplies one.
+- No numerical data is changed by backward execution. Callback failures can leave partially
+  updated state, as allowed by the existing non-transactional backward contract.
+- The demo now runs a scalar addition backward pass. Tests cover shared nodes, repeated
+  operands, seeds, constants, resets, retained expressions, repeated passes, and cyclic graphs.
 
 ## Decisions still to finalise
 

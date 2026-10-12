@@ -18,7 +18,7 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Introduce `AutogradValue` to connect the agreed contracts.
 - [x] Implement and test the value-node contract.
 - [x] Implement and test the gradient-state contract.
-- [ ] Implement scalar operations and backward traversal.
+- [x] Implement scalar addition and backward traversal.
 - [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
 
 ## Completed increment: value contract
@@ -167,7 +167,21 @@ Status: complete. Added local propagation and six focused tests. The standalone
 `./mvnw -o verify` build passed with all thirty tests. Graph-wide backward entry points
 remain unimplemented; interfaces and dependencies are unchanged.
 
+## Completed increment: graph-wide addition backward passes
+
+Implement graph-wide backward execution for addition in `AutogradValueImpl`.
+
+- Traverse inputs in dependency order by node identity; reject cycles before changing state.
+- Seed the result explicitly or use the float subclass's default seed of one.
+- Propagate only new contributions, replacing intermediate gradients and accumulating leaves.
+- Test shared branches, duplicates, constants, repeated passes, resets, and invalid seeds/roots.
+- Update the scalar demo and validate the standalone build; leave interface contracts unchanged.
+
+Status: complete. Added backward execution and seven focused tests. The standalone
+`./mvnw -o verify` build passed with all thirty-seven tests. The demo shows an absent
+constant gradient and a tracked gradient of 1.0. Interface contracts remain unchanged.
+
 ## Next increment
 
-Review graph-wide traversal, explicit/default seeds, shared branches, and repeated-pass
-behaviour before implementing the backward entry points when requested.
+Review the `BinaryGradient` contract and generic binary derivative-rule construction
+before adding multiplication and higher-derivative validation when requested.

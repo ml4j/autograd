@@ -1,12 +1,18 @@
 package org.ml4j.autograd.impl;
 
 import org.ml4j.autograd.AutogradValue;
+import org.ml4j.autograd.Accumulatable;
+import org.ml4j.autograd.Value;
 import org.ml4j.autograd.node.GradNode;
 import org.ml4j.autograd.node.ValueNode;
 import org.ml4j.autograd.node.impl.GradNodeImpl;
 import org.ml4j.autograd.node.impl.ValueNodeImpl;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
@@ -18,9 +24,9 @@ import java.util.function.Supplier;
  * A future tensor implementation can supply tensor arithmetic and shape mapping
  * while using the same ordered graph inputs and gradient-state handles.
  *
- * <p>Addition has a local backward rule, while graph-wide backward entry points
- * remain unimplemented. This partial implementation does not yet fulfil the complete
- * backward contract of {@link AutogradValue}.
+ * <p>Addition supplies a local backward rule. Graph-wide passes order reachable
+ * nodes by dependency, propagate new contributions, and retain previous leaf gradients.
+ * Numerical subclasses define implicit seed policies; explicit seeds work generically.
  * Supplied data and context must satisfy {@link org.ml4j.autograd.Value}'s stability
  * contract. The base class adds no caching and is intended for sequential use.
  *
@@ -164,20 +170,79 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
     protected abstract V createAutogradValue(Supplier<D> dataSupplier, C context, boolean requiresGrad,
                                              List<? extends ValueNode<?>> inputs);
 
-    /**
-     * Placeholder for graph-wide backward execution with an explicit seed.
-     * @param gradient the intended incoming seed
-     * @throws UnsupportedOperationException always in this forward-only increment
-     */
-    @Override public void backward(V gradient) {
-        throw new UnsupportedOperationException("Backward passes are not implemented yet");
+    /** {@inheritDoc} */
+    @Override
+    public void backward(V gradient) {
+        Objects.requireNonNull(gradient, "seed gradient");
+        if (!requiresGrad()) {
+            throw new IllegalStateException("The backward root must require gradients");
+        }
+        // Discover and validate the original graph before derivative operations add new nodes.
+        List<ValueNode<?>> order = new ArrayList<>();
+        visit(valueNode(), new IdentityHashMap<>(), order);
+        List<Runnable> restoreLeaves = new ArrayList<>();
+        for (ValueNode<?> node : order) {
+            AutogradValue<?, ?, ?> owner = (AutogradValue<?, ?, ?>) node.value();
+            if (node.inputs().isEmpty()) {
+                saveLeafGradient(owner.gradNode(), restoreLeaves);
+            }
+            owner.gradNode().reset();
+        }
+        gradNode().accumulate(gradient);
+        Collections.reverse(order);
+        for (ValueNode<?> node : order) {
+            AutogradValue<?, ?, ?> owner = (AutogradValue<?, ?, ?>) node.value();
+            if (owner.requiresGrad() && owner.gradNode().gradient().isPresent()) {
+                node.backward();
+            }
+        }
+        // Restore previous leaves AFTER propagation, preventing stale contributions from running again.
+        restoreLeaves.forEach(Runnable::run);
+    }
+
+    /** Retains typed gradient references for restoration without mutating earlier expressions. */
+    private static <G extends Value<?, ?> & Accumulatable<G>> void saveLeafGradient(
+            GradNode<G> node, List<Runnable> restoreLeaves) {
+        node.gradient().ifPresent(previous -> restoreLeaves.add(() -> node.accumulate(previous)));
+    }
+
+    /** Produces dependency-first order by identity; a false entry marks a node still being visited. */
+    private static void visit(ValueNode<?> node, Map<ValueNode<?>, Boolean> visited, List<ValueNode<?>> order) {
+        Boolean complete = visited.get(node);
+        if (complete != null) {
+            if (!complete) throw new IllegalStateException("Cycle in computation graph");
+            return;
+        }
+        if (!(node.value() instanceof AutogradValue<?, ?, ?>)) {
+            throw new IllegalArgumentException("Backward graph inputs must represent autograd values");
+        }
+        visited.put(node, false);
+        for (ValueNode<?> input : node.inputs()) {
+            visit(input, visited, order);
+        }
+        visited.put(node, true);
+        order.add(node);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void backward() {
+        if (!requiresGrad()) {
+            throw new IllegalStateException("The backward root must require gradients");
+        }
+        backward(defaultGradient());
     }
 
     /**
-     * Placeholder for graph-wide backward execution with an implicit seed.
-     * @throws UnsupportedOperationException always in this forward-only increment
+     * Supplies this numerical type's implicit seed, if defined.
+     *
+     * <p>Float scalars use one. Tensor subclasses can define a compatible seed
+     * policy or keep the default requirement for an explicit seed.
+     *
+     * @return the implicit seed
+     * @throws UnsupportedOperationException unless the subclass defines an implicit seed
      */
-    @Override public void backward() {
-        throw new UnsupportedOperationException("Backward passes are not implemented yet");
+    protected V defaultGradient() {
+        throw new UnsupportedOperationException("Supply an explicit seed gradient");
     }
 }

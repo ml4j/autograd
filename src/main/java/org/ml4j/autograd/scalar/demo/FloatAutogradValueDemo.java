@@ -2,12 +2,12 @@ package org.ml4j.autograd.scalar.demo;
 
 import org.ml4j.autograd.scalar.FloatAutogradValue;
 
-/** Demonstrates scalar forward addition and graph structure; backward execution is intentionally deferred. */
+/** Demonstrates scalar addition, graph structure, and a graph-wide backward pass. */
 public final class FloatAutogradValueDemo {
     private FloatAutogradValueDemo() {}
 
     /**
-     * Runs the forward-only example.
+     * Runs the scalar addition example with a constant and a tracked operand.
      * @param args unused command-line arguments
      */
     public static void main(String[] args) {
@@ -19,6 +19,8 @@ public final class FloatAutogradValueDemo {
         System.out.println("Node represents sum: " + (sum.valueNode().value() == sum));
         System.out.println("Requires gradient: " + sum.requiresGrad());
         System.out.println("Gradient before backward: " + sum.gradNode().gradient());
-        System.out.println("Backward execution is not implemented yet.");
+        sum.backward();
+        System.out.println("Constant gradient: " + first.gradNode().gradient());
+        System.out.println("Tracked gradient: " + second.gradNode().gradient().orElseThrow().data().get());
     }
 }
