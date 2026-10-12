@@ -16,8 +16,9 @@ validation scope, not a restriction on numerical data types.
 
 ## Current state
 
-The repository contains standalone build infrastructure, the documented `Value` and
-`ValueNode` interfaces, and the immutable scalar implementation `FloatValue` with tests.
+The repository contains standalone build infrastructure, the documented `Value`,
+`ValueNode`, `Accumulatable`, and `GradNode` interfaces, and the immutable scalar implementation
+`FloatValue` with tests.
 No computation-node implementation has been introduced yet.
 
 ## Interface decisions and change control
@@ -110,8 +111,61 @@ void backward();
 - Scalar and tensor operations use the same node contract; context such as tensor
   shape remains on the represented value.
 
+## Agreed interface: `org.ml4j.autograd.Accumulatable<V>`
+
+Purpose: describe how values combine into a sum, independently of the state that
+stores accumulated gradients. For example, scalar contributions of 2 and 3 sum
+to 5; tensor contributions add compatible numerical contents.
+
+```java
+V add(V other);
+```
+
+- Accepts a non-null compatible operand and returns a non-null sum.
+- Addition does not mutate either operand's numerical data, computation graph,
+  or gradient state. Storing the sum in an accumulator is a separate responsibility.
+- Differentiable implementations retain the operand dependencies and backward rule
+  on the result and combine both operands' gradient requirements.
+- Numerical data and context must be compatible. Tensor shape compatibility and
+  broadcasting rules are defined by concrete numerical implementations, not this interface.
+- No result object-identity, evaluation, or caching strategy is prescribed.
+- The exception policy for invalid operands is not specified by this interface.
+- `FloatValue` remains an implementation of `Value` alone in this increment.
+
+## Agreed interface: `org.ml4j.autograd.node.GradNode<V>`
+
+Purpose: hold the current gradient and combine contributions using the gradient
+value's own addition. The type bound is `V extends Value<?, ?> & Accumulatable<V>`.
+This supports scalar and tensor gradient values without requiring a complete
+autograd-value interface.
+
+```java
+Optional<V> gradient();
+void accumulate(V contribution);
+void reset();
+```
+
+- `gradient()` returns a non-null optional without evaluating data. Absence differs
+  from a present gradient whose contents are zero. Gradient data/context must be
+  compatible with the forward value it differentiates.
+- The first contribution is stored directly. Subsequent contributions replace the
+  held reference with `current.add(contribution)`, without mutating either operand.
+- Contributions and sums are non-null and compatible with the represented gradient.
+  Null contributions or sums cause `NullPointerException`. If addition throws or
+  returns null, the previously held reference remains unchanged. Compatibility rules
+  and their exception types belong to the numerical implementation.
+- The node does not directly evaluate data; addition determines any evaluation and
+  whether differentiable dependencies are retained.
+- Accumulation and reset preserve the node as a stable handle. Held gradient value
+  identity is not guaranteed; earlier expressions are not refreshed or mutated.
+  Their data stability continues to follow the `Value` contract.
+- `reset()` clears only the held reference and is idempotent. It does not release
+  forward data or mutate earlier gradient values or their computation graphs.
+- The accumulator has no graph-input or backward-execution responsibilities. A
+  differentiable gradient value can have its own computation node.
+
 ## Decisions still to finalise
 
-Review and document gradient accumulation,
-reset, and backward-pass behaviour as their interfaces are introduced. Earlier
+Review and document how autograd values connect the nodes and coordinate backward
+passes as their interfaces are introduced. Earlier
 proof-of-concept designs are candidates to evaluate, not requirements to copy wholesale.

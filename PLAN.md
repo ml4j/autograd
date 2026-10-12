@@ -13,7 +13,9 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Introduce the numerical value/data-access contract.
 - [x] Implement and test basic data access.
 - [x] Introduce computation-node and local propagation contracts.
-- [ ] Introduce `Accumulatable`, then `GradNode`, then `AutogradValue`, in separate increments.
+- [x] Introduce the non-mutating `Accumulatable` contract.
+- [x] Introduce the gradient-state `GradNode` contract.
+- [ ] Introduce `AutogradValue` to connect the agreed contracts.
 - [ ] Implement and test the node and gradient contracts.
 - [ ] Implement scalar operations and backward traversal.
 - [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
@@ -58,7 +60,33 @@ Status: complete. The interface and specification agree; the standalone
 `./mvnw -o verify` build passed, including the four existing scalar tests.
 No node implementation or dependencies were added.
 
+## Completed increment: value-combination contract
+
+Introduce only `org.ml4j.autograd.Accumulatable<V>` with non-mutating addition.
+
+- Document how gradient values combine without managing the stored accumulator state.
+- Include scalar and tensor examples and record the contract in `SPEC.md`.
+- Add no implementation, dependencies, or changes to `FloatValue` in this increment.
+- Check documentation consistency and validate the standalone wrapper build.
+
+Status: complete. Added the interface and matching specification. The standalone
+`./mvnw -o verify` build passed with all four existing tests. `FloatValue` is unchanged.
+
+## Completed increment: gradient-state contract
+
+Introduce only `org.ml4j.autograd.node.GradNode<V>`, requiring `Value` and
+`Accumulatable` for the held gradient type.
+
+- Document optional gradient access, non-mutating value combination, and reset.
+- Record stable-handle and replaceable-expression semantics in `SPEC.md`.
+- Add no implementation or dependencies; leave existing interfaces unchanged.
+- Check Javadoc against the specification and validate the standalone wrapper build.
+
+Status: complete. Added the interface and matching specification. The standalone
+`./mvnw -o verify` build passed, including all four existing tests. No implementation
+or dependencies were added.
+
 ## Next increment
 
-Review and introduce `Accumulatable<V>` when requested. `GradNode` and `AutogradValue`
-follow as separate increments; this plan does not authorise their implementation.
+Review and introduce `AutogradValue` when requested, connecting numerical values,
+computation nodes, gradient state, and graph-wide backward entry points.
