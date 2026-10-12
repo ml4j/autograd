@@ -12,8 +12,9 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Initial agent instructions, specification, and plan.
 - [x] Introduce the numerical value/data-access contract.
 - [x] Implement and test basic data access.
-- [ ] Introduce and test gradient combination and state contracts.
-- [ ] Introduce computation-node and local propagation contracts.
+- [x] Introduce computation-node and local propagation contracts.
+- [ ] Introduce `Accumulatable`, then `GradNode`, then `AutogradValue`, in separate increments.
+- [ ] Implement and test the node and gradient contracts.
 - [ ] Implement scalar operations and backward traversal.
 - [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
 
@@ -44,7 +45,20 @@ of `Value<Float, Void>` constructed from a primitive float.
 Status: complete. The standalone `./mvnw -o verify` build passed with four tests.
 The agreed `Value` interface contract remains unchanged.
 
+## Completed increment: value-node contract
+
+Introduce only `org.ml4j.autograd.node.ValueNode<V>` before gradient-related interfaces.
+
+- Document the represented value, ordered input nodes, and result-value callback.
+- Record the contract in `SPEC.md`, distinguishing one local backward step from graph traversal.
+- Add no node implementation or dependencies in this increment.
+- Check Javadoc against the specification and run the standalone wrapper build.
+
+Status: complete. The interface and specification agree; the standalone
+`./mvnw -o verify` build passed, including the four existing scalar tests.
+No node implementation or dependencies were added.
+
 ## Next increment
 
-Review the gradient-combination contract before introducing another interface,
-when requested. No subsequent increment is authorised by this plan alone.
+Review and introduce `Accumulatable<V>` when requested. `GradNode` and `AutogradValue`
+follow as separate increments; this plan does not authorise their implementation.

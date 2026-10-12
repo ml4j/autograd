@@ -16,8 +16,9 @@ validation scope, not a restriction on numerical data types.
 
 ## Current state
 
-The repository contains standalone build infrastructure and the documented `Value`
-interface and its immutable scalar implementation, `FloatValue`, with data-access tests.
+The repository contains standalone build infrastructure, the documented `Value` and
+`ValueNode` interfaces, and the immutable scalar implementation `FloatValue` with tests.
+No computation-node implementation has been introduced yet.
 
 ## Interface decisions and change control
 
@@ -79,8 +80,38 @@ C context();
 - Tests demonstrate stable repeated data access, independent values, absent context,
   and preservation of floating-point boundary values.
 
+## Agreed interface: `org.ml4j.autograd.node.ValueNode<V>`
+
+Purpose: represent a forward value, its immediate computation dependencies, and its
+local backward callback. The type bound is `V extends Value<?, ?>`; no gradient
+interface or implementation is required by this contract.
+
+```java
+V value();
+List<? extends ValueNode<?>> inputs();
+void setBackwardFunction(Consumer<V> resultValueBackwardFunction);
+Consumer<V> backwardFunction();
+void backward();
+```
+
+- `value()` returns a non-null represented value without evaluating numerical data.
+- `inputs()` returns an unmodifiable, non-null list of non-null nodes in operand order.
+  Leaves have no inputs. Duplicate operand references are preserved. Inputs may use
+  different numerical data and context types.
+- The callback consumes the represented forward/result value, not its gradient.
+  Gradient lookup and contribution calculation are responsibilities of the callback.
+- Installing a callback replaces the previous one without executing either callback.
+  Passing null removes it. `backwardFunction()` returns the installed callback or null,
+  without executing it or evaluating data.
+- `backward()` invokes the installed callback once with `value()`, or does nothing
+  when no callback exists. It does not traverse inputs, seed gradients, or extract
+  gradients. A separate coordinator ensures contributions are ready before invocation.
+- Callback exceptions propagate; this local operation offers no rollback guarantee.
+- Scalar and tensor operations use the same node contract; context such as tensor
+  shape remains on the represented value.
+
 ## Decisions still to finalise
 
-Review and document graph-node roles, gradient accumulation,
+Review and document gradient accumulation,
 reset, and backward-pass behaviour as their interfaces are introduced. Earlier
 proof-of-concept designs are candidates to evaluate, not requirements to copy wholesale.
