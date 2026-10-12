@@ -16,7 +16,8 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Introduce the non-mutating `Accumulatable` contract.
 - [x] Introduce the gradient-state `GradNode` contract.
 - [x] Introduce `AutogradValue` to connect the agreed contracts.
-- [ ] Implement and test the node and gradient contracts.
+- [x] Implement and test the value-node contract.
+- [ ] Implement and test the gradient-state contract.
 - [ ] Implement scalar operations and backward traversal.
 - [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
 
@@ -100,7 +101,28 @@ Status: complete. The interface and specification agree. The standalone
 `./mvnw -o verify` build passed with all four existing tests. No implementation
 or dependencies were added.
 
+## Completed increment: value-node implementation
+
+Implement `org.ml4j.autograd.node.impl.ValueNodeImpl<V>` against the agreed node contract.
+
+- Store a deferred value supplier and an immutable copy of ordered inputs.
+- Provide a leaf constructor and callback installation, replacement, removal, and invocation.
+- Test lazy reference access, duplicate inputs, immutable inputs, callbacks, and failure behaviour.
+- Use `FloatValue` in tests; add no gradient implementation or dependencies.
+- Validate with the standalone Maven Wrapper build.
+
+Status: complete. Added the implementation and seven focused tests. The standalone
+`./mvnw -o verify` build passed with all eleven tests. Existing interface contracts
+remain unchanged; no dependencies were added.
+
+## Completed increment: node implementation package
+
+Move the value-node implementation and tests from `impl.node` to `node.impl`,
+keeping implementation packages alongside their domain interfaces. Update references
+and validate the standalone build. Status: complete; `./mvnw -o clean verify` passed
+with all eleven tests. Contracts remain unchanged.
+
 ## Next increment
 
-Review the first node implementation and its tests when requested. Implementations
-must preserve the recorded contracts; no further code is authorised by this plan alone.
+Implement and test `GradNodeImpl` in `org.ml4j.autograd.node.impl` when requested,
+using a small accumulatable test value before introducing scalar autograd operations.

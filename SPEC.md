@@ -19,7 +19,7 @@ validation scope, not a restriction on numerical data types.
 The repository contains standalone build infrastructure, the documented `Value`,
 `ValueNode`, `Accumulatable`, `GradNode`, and `AutogradValue` interfaces, and the immutable scalar implementation
 `FloatValue` with tests.
-No computation-node implementation has been introduced yet.
+`ValueNodeImpl` implements the computation-node contract with focused tests.
 
 ## Interface decisions and change control
 
@@ -203,6 +203,20 @@ void backward();
   `UnsupportedOperationException` and require explicit seeds.
 - Inherited addition follows the existing `Accumulatable` contract; inherited data
   access and context stability follow the existing `Value` contract.
+
+## Implementation: `org.ml4j.autograd.node.impl.ValueNodeImpl<V>`
+
+- A final implementation accepting a deferred represented-value supplier and an input list.
+  Its leaf constructor supplies an empty list; neither constructor resolves the value.
+- Stores an immutable copy of inputs, preserving order and repeated operand references.
+- Rejects null suppliers, input lists, and input nodes at construction; rejects null
+  represented values when accessed. The supplier must consistently represent this node's value.
+- Initially has no callback. Installation, replacement, and removal do not execute callbacks.
+- Local backward execution passes the represented value, not its gradient, and never
+  traverses inputs. Callback exceptions propagate without rollback.
+- Intended for sequential use; no thread-safety guarantee is provided.
+- Existing interface contracts remain unchanged. Tests cover deferred access, data
+  non-evaluation, input copying, callbacks, local execution, and failure behaviour.
 
 ## Decisions still to finalise
 
