@@ -12,7 +12,11 @@ reference material, not dependencies.
   Propose changes and their consequences first; implementation convenience or a later
   plan stage does not authorise a contract change.
 - Use concise Javadoc to explain each public type's purpose and observable behaviour.
-  Name read accessors `x()` and actions with verbs.
+  Follow the Javadoc convention in `SPEC.md`: simple explanation and useful examples
+  first, precise contract details afterward. Name read accessors `x()` and actions with verbs.
+- Where numerical examples help explain a contract, include tensor examples alongside
+  scalars, such as tensor data suppliers and shape/size context. Keep examples independent
+  of any particular tensor library.
 - Add meaningful tests with implementation. Add dependencies only when the current
   increment needs them.
 - Validate code and build changes with `./mvnw verify` (`mvnw.cmd verify` on Windows).

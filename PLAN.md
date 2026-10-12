@@ -10,15 +10,26 @@ moving to the next. This plan records direction, not permission to implement all
 
 - [x] Standalone Maven setup and wrapper.
 - [x] Initial agent instructions, specification, and plan.
-- [ ] Introduce the numerical value/data-access contract.
+- [x] Introduce the numerical value/data-access contract.
 - [ ] Implement and test basic data access.
 - [ ] Introduce and test gradient combination and state contracts.
 - [ ] Introduce computation-node and local propagation contracts.
 - [ ] Implement scalar operations and backward traversal.
 - [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
 
+## Completed increment: value contract
+
+Introduce `org.ml4j.autograd.Value<D, C>` with the agreed data-access contract.
+
+- Add only the interface, with purpose and method Javadoc.
+- Record non-null numerical data, lazy access, stable data/context, optional context,
+  and implementation-defined caching in `SPEC.md`.
+- Do not add an implementation, tests, or dependencies in this increment.
+- Validate with the standalone Maven Wrapper build and check Javadoc against the spec.
+
+Status: complete. Added the interface and matching specification; the standalone
+`./mvnw -o verify` build passed. No implementation, tests, or dependencies were added.
+
 ## Next increment
 
-Review the minimal value interface: numerical data access, laziness, context, and
-data stability. Agree its contract before adding an implementation.
-
+Implement and test basic data access against the agreed `Value` contract when requested.
