@@ -17,7 +17,7 @@ moving to the next. This plan records direction, not permission to implement all
 - [x] Introduce the gradient-state `GradNode` contract.
 - [x] Introduce `AutogradValue` to connect the agreed contracts.
 - [x] Implement and test the value-node contract.
-- [ ] Implement and test the gradient-state contract.
+- [x] Implement and test the gradient-state contract.
 - [ ] Implement scalar operations and backward traversal.
 - [ ] Validate repeated passes, shared inputs, resets, and higher derivatives.
 
@@ -122,7 +122,22 @@ keeping implementation packages alongside their domain interfaces. Update refere
 and validate the standalone build. Status: complete; `./mvnw -o clean verify` passed
 with all eleven tests. Contracts remain unchanged.
 
+## Completed increment: gradient-state implementation
+
+Implement `GradNodeImpl` in `org.ml4j.autograd.node.impl` against the agreed gradient contract.
+
+- Store the first contribution and combine later contributions using non-mutating addition.
+- Clear only the held reference on reset; preserve previous expressions and state on addition failure.
+- Test absence versus zero, lazy data access, accumulation, reset, nulls, and failed addition
+  with a small immutable accumulatable fixture.
+- Keep `FloatValue` and all interface contracts unchanged; add no dependencies.
+- Validate the standalone Maven Wrapper build.
+
+Status: complete. Added the implementation and seven focused tests. The standalone
+`./mvnw -o verify` build passed with all eighteen tests. No interface contracts,
+`FloatValue` behaviour, or dependencies changed.
+
 ## Next increment
 
-Implement and test `GradNodeImpl` in `org.ml4j.autograd.node.impl` when requested,
-using a small accumulatable test value before introducing scalar autograd operations.
+Review how to introduce `FloatAutogradValue` using the tested node implementations
+when requested. Agree the scope before adding scalar operations or backward traversal.

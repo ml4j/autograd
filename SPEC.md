@@ -20,6 +20,7 @@ The repository contains standalone build infrastructure, the documented `Value`,
 `ValueNode`, `Accumulatable`, `GradNode`, and `AutogradValue` interfaces, and the immutable scalar implementation
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
+`GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
 
 ## Interface decisions and change control
 
@@ -217,6 +218,18 @@ void backward();
 - Intended for sequential use; no thread-safety guarantee is provided.
 - Existing interface contracts remain unchanged. Tests cover deferred access, data
   non-evaluation, input copying, callbacks, local execution, and failure behaviour.
+
+## Implementation: `org.ml4j.autograd.node.impl.GradNodeImpl<V>`
+
+- A final implementation with an initially absent gradient and no constructor-time evaluation.
+- Holds the first contribution directly; combines later contributions through `current.add(contribution)`.
+- Validates the contribution and sum before replacing state. Addition failures and null
+  sums preserve the previous reference, relying on the non-mutating addition contract.
+- Reading gradient state and resetting do not evaluate data. Addition decides any evaluation.
+- Reset clears only the reference, preserving earlier values and the node handle.
+- Intended for sequential use; no thread-safety guarantee is provided.
+- Tested with a small immutable accumulatable fixture; `FloatValue` and interface contracts
+  remain unchanged. No additional dependencies were introduced.
 
 ## Decisions still to finalise
 
