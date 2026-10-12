@@ -137,7 +137,23 @@ Status: complete. Added the implementation and seven focused tests. The standalo
 `./mvnw -o verify` build passed with all eighteen tests. No interface contracts,
 `FloatValue` behaviour, or dependencies changed.
 
+## Completed increment: forward autograd structure
+
+Introduce a forward-only structural demonstration with `AutogradValueImpl`,
+`FloatAutogradValue`, and a scalar addition demo.
+
+- Reuse the proven separation between generic graph construction and concrete arithmetic.
+- Use tested node implementations; defer self-reference resolution until after construction.
+- Implement lazy forward addition, ordered input nodes, and combined gradient requirements.
+- Keep backward passes explicitly unimplemented, as requested; document this temporary limitation.
+- Test forward behaviour and run the standalone build and demo. Add no dependencies.
+
+Status: complete. Added the base class, float subclass, forward demo, and six tests.
+The standalone `./mvnw -o verify` build passed with all twenty-four tests. The demo
+prints a sum of 5.0, two inputs, combined gradient requirements, and an absent gradient.
+Existing interface contracts are unchanged; backward behaviour remains unimplemented.
+
 ## Next increment
 
-Review how to introduce `FloatAutogradValue` using the tested node implementations
-when requested. Agree the scope before adding scalar operations or backward traversal.
+Review the structure before implementing local propagation and graph-wide backward
+execution when requested. No further implementation is authorised by this plan alone.

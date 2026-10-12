@@ -21,6 +21,8 @@ The repository contains standalone build infrastructure, the documented `Value`,
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
+`AutogradValueImpl` and `FloatAutogradValue` provide a forward-only structural
+demonstration with lazy addition and a runnable demo. Backward execution is not implemented.
 
 ## Interface decisions and change control
 
@@ -230,6 +232,28 @@ void backward();
 - Intended for sequential use; no thread-safety guarantee is provided.
 - Tested with a small immutable accumulatable fixture; `FloatValue` and interface contracts
   remain unchanged. No additional dependencies were introduced.
+
+## Partial implementation: generic autograd structure and float demonstration
+
+- `org.ml4j.autograd.impl.AutogradValueImpl<V, D, C>` owns stable value and gradient
+  nodes, numerical data access, context, and gradient requirements.
+- Its value node uses a deferred `self()` reference; no subclass hook is invoked
+  during base construction. Subclasses consistently return their concrete instance.
+- Generic forward addition delegates numerical addition, context mapping, and result
+  construction to concrete hooks. Context is mapped once; data evaluation is deferred.
+- Results preserve ordered operand nodes, repeated operands, and the combined
+  gradient requirement. Construction does not mutate operand graphs or gradient state.
+- Supplied data/context must meet the stable `Value` contract. Null numerical results
+  are rejected when evaluated; the base implementation introduces no caching.
+- `org.ml4j.autograd.scalar.FloatAutogradValue` is a separate final scalar subclass,
+  supporting fixed or deferred stable float data with Void context. `FloatValue` is unchanged.
+- `org.ml4j.autograd.scalar.demo.FloatAutogradValueDemo` demonstrates forward addition
+  and graph/gradient-state inspection without calling backward methods.
+- This increment is intentionally incomplete: both backward entry points and installed
+  local operation callbacks throw `UnsupportedOperationException`. This temporary
+  implementation limitation does not revise the agreed `AutogradValue` contract.
+- No derivative-function interface, backward traversal, or numerical propagation
+  has been added in this increment; the structure leaves them for later implementation.
 
 ## Decisions still to finalise
 
