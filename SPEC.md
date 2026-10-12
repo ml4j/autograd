@@ -21,8 +21,9 @@ The repository contains standalone build infrastructure, the documented `Value`,
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
-`AutogradValueImpl` and `FloatAutogradValue` provide a forward-only structural
-demonstration with lazy addition and a runnable demo. Backward execution is not implemented.
+`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition and local addition
+propagation. A runnable demo shows forward structure. Graph-wide backward execution
+is not implemented.
 
 ## Interface decisions and change control
 
@@ -249,11 +250,23 @@ void backward();
   supporting fixed or deferred stable float data with Void context. `FloatValue` is unchanged.
 - `org.ml4j.autograd.scalar.demo.FloatAutogradValueDemo` demonstrates forward addition
   and graph/gradient-state inspection without calling backward methods.
-- This increment is intentionally incomplete: both backward entry points and installed
-  local operation callbacks throw `UnsupportedOperationException`. This temporary
-  implementation limitation does not revise the agreed `AutogradValue` contract.
-- No derivative-function interface, backward traversal, or numerical propagation
-  has been added in this increment; the structure leaves them for later implementation.
+- Graph-wide backward entry points still throw `UnsupportedOperationException`.
+  This temporary limitation does not revise the agreed `AutogradValue` contract.
+- No derivative-function interface or backward traversal has been added yet.
+
+## Implementation increment: local addition propagation
+
+- Addition installs a callback receiving the forward result value. It reads the incoming
+  gradient from that result's gradient node and contributes it unchanged to each operand
+  requiring gradients. No result gradient or a constant result causes no propagation.
+- Duplicate operand positions contribute separately; accumulation uses the tested
+  `GradNode` implementation without mutating shared seeds or earlier gradient expressions.
+- The callback does not seed gradients or traverse inputs. Tests seed result gradient
+  nodes explicitly and invoke only `valueNode().backward()`.
+- Generic forward binary construction leaves derivative-rule installation to the operation.
+- This unchanged-gradient rule is demonstrated for scalar addition. Future tensor operations
+  involving broadcasting must supply appropriate gradient-shape adaptations explicitly.
+- Existing interface contracts, graph-wide placeholders, and dependencies are unchanged.
 
 ## Decisions still to finalise
 

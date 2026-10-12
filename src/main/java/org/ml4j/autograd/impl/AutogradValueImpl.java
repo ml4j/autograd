@@ -18,9 +18,9 @@ import java.util.function.Supplier;
  * A future tensor implementation can supply tensor arithmetic and shape mapping
  * while using the same ordered graph inputs and gradient-state handles.
  *
- * <p>This is a forward-only structural implementation. Backward entry points and
- * operation callbacks explicitly throw until propagation is implemented. They do
- * not yet fulfil the complete backward contract of {@link AutogradValue}.
+ * <p>Addition has a local backward rule, while graph-wide backward entry points
+ * remain unimplemented. This partial implementation does not yet fulfil the complete
+ * backward contract of {@link AutogradValue}.
  * Supplied data and context must satisfy {@link org.ml4j.autograd.Value}'s stability
  * contract. The base class adds no caching and is intended for sequential use.
  *
@@ -87,7 +87,8 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      *
      * <p>Scalar arithmetic or tensor addition is supplied by the concrete type.
      * Forward construction leaves operand data and gradient state unchanged.
-     * The installed local backward callback is a temporary unimplemented placeholder.
+     * Each tracked operand receives the result's incoming gradient unchanged when
+     * the result node's local backward callback is invoked.
      *
      * @param other the right operand
      * @return the new forward sum
@@ -95,7 +96,23 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      */
     @Override
     public V add(V other) {
-        return applyBinaryOperator(other, this::addData, this::mapContext);
+        V result = applyBinaryOperator(other, this::addData, this::mapContext);
+        result.valueNode().setBackwardFunction(resultValue -> {
+            if (!resultValue.requiresGrad()) {
+                return;
+            }
+            resultValue.gradNode().gradient().ifPresent(incomingGradient -> {
+                // Addition has unit partial derivatives: each tracked operand receives the seed.
+                if (requiresGrad()) {
+                    gradNode().accumulate(incomingGradient);
+                }
+                if (other.requiresGrad()) {
+                    // Do not deduplicate: x.add(x) contributes once for each operand position.
+                    other.gradNode().accumulate(incomingGradient);
+                }
+            });
+        });
+        return result;
     }
 
     /**
@@ -116,10 +133,7 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
         C outputContext = contextMapper.apply(context(), other.context());
         V result = createAutogradValue(() -> forward.apply(data().get(), other.data().get()),
                 outputContext, requiresGrad() || other.requiresGrad(), List.of(valueNode(), other.valueNode()));
-        // Preserve the result-value callback shape without pretending propagation is implemented.
-        result.valueNode().setBackwardFunction(resultValue -> {
-            throw new UnsupportedOperationException("Local backward propagation is not implemented yet");
-        });
+        // The concrete operation installs its local derivative rule after forward construction.
         return result;
     }
 

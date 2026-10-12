@@ -70,7 +70,7 @@ class FloatAutogradValueTest {
         var sum = value.add(value);
         assertThrows(UnsupportedOperationException.class, sum::backward);
         assertThrows(UnsupportedOperationException.class, () -> sum.backward(new FloatAutogradValue(1f, false)));
-        assertThrows(UnsupportedOperationException.class, () -> sum.valueNode().backward());
+        sum.valueNode().backward(); // No incoming gradient: local propagation does nothing.
         assertTrue(sum.gradNode().gradient().isEmpty());
         assertTrue(value.gradNode().gradient().isEmpty());
     }

@@ -18,7 +18,8 @@ import java.util.function.Supplier;
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
  * subclass, numerical addition is ordinary float addition. Forward results are lazy;
- * supplied numerical data must remain stable. Backward execution is not implemented yet.
+ * supplied numerical data must remain stable. Addition supports local propagation,
+ * while graph-wide backward execution is not implemented yet.
  */
 public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradValue, Float, Void> {
 

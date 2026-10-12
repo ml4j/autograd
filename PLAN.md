@@ -153,7 +153,21 @@ The standalone `./mvnw -o verify` build passed with all twenty-four tests. The d
 prints a sum of 5.0, two inputs, combined gradient requirements, and an absent gradient.
 Existing interface contracts are unchanged; backward behaviour remains unimplemented.
 
+## Completed increment: local addition propagation
+
+Implement addition's local backward callback in `AutogradValueImpl`.
+
+- Read the incoming gradient from the result value and accumulate it into each tracked operand.
+- Skip absent gradients and constant results/operands; preserve duplicate operand contributions.
+- Test explicit seeds, constants, duplicates, and non-mutation using the local node entry point.
+- Leave graph-wide backward traversal unimplemented and existing interfaces unchanged.
+- Validate the standalone Maven Wrapper build.
+
+Status: complete. Added local propagation and six focused tests. The standalone
+`./mvnw -o verify` build passed with all thirty tests. Graph-wide backward entry points
+remain unimplemented; interfaces and dependencies are unchanged.
+
 ## Next increment
 
-Review the structure before implementing local propagation and graph-wide backward
-execution when requested. No further implementation is authorised by this plan alone.
+Review graph-wide traversal, explicit/default seeds, shared branches, and repeated-pass
+behaviour before implementing the backward entry points when requested.
