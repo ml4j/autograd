@@ -15,10 +15,14 @@ import java.util.function.Supplier;
  * decide whether to cache results. Gradients, computation graphs, naming, and data
  * replacement are separate responsibilities.
  *
+ * <p>A {@link Parameter} can update a model's parameter by selecting a new autograd
+ * leaf. The parameter handle remains stable while each selected value's numerical
+ * contents remain unchanged. Existing graphs retain their original values.
+ *
  * @param <D> the numerical data type, for example {@link Float} or a tensor
  * @param <C> the context type, for example a shape, or {@link Void} when none is needed
  */
-public interface Value<D, C> {
+public interface Value<D, C> extends DataSupplier<D> {
 
     /**
      * Returns a supplier that provides this value's non-null numerical data.
@@ -35,6 +39,7 @@ public interface Value<D, C> {
      *
      * @return a non-null data supplier whose successful evaluations return non-null data
      */
+    @Override
     Supplier<D> data();
 
     /**

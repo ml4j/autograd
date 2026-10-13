@@ -52,9 +52,28 @@ lifecycle, and failure behaviour. Propose the reason and impact of a change befo
 implementing it, then update this specification, Javadoc, and affected tests together
 after agreement. Refactoring an implementation must preserve the agreed contract.
 
+## Agreed interface: `org.ml4j.autograd.DataSupplier<D>`
+
+Purpose: expose data access independently of context, arithmetic, and autograd state.
+For example, supply Float scalar data or a backend tensor object.
+
+```java
+Supplier<D> data();
+```
+
+- Returns a non-null supplier without evaluating data; evaluation is deferred to get().
+- Caching, supplier/result identity, data stability, and result nullability are
+  implementation-defined. Evaluation failures may propagate from the supplier.
+- Adds no context, graph, gradient, or mutation methods.
+- Value<D, C> extends DataSupplier<D> and redeclares data() with its existing stronger
+  guarantees: stable numerical contents and non-null successful evaluations.
+  AutogradValue inherits this capability through Value. Existing implementations
+  and the Value data-access contract are unchanged.
+
 ## Agreed interface: `org.ml4j.autograd.Value<D, C>`
 
 Purpose: provide numerical data access and the metadata needed to interpret that data.
+Extends DataSupplier<D> while preserving the stronger data-access guarantees below.
 `D` describes the numerical data type; `C` describes its context type.
 For example, `D` can be a tensor implementation type and `C` a shape or size type
 describing its dimensions. These examples introduce no tensor-library dependency.
@@ -184,6 +203,7 @@ value type, so gradient expressions can have their own computation graphs.
 ValueNode<V> valueNode();
 GradNode<V> gradNode();
 boolean requiresGrad();
+void setRequiresGrad(boolean requiresGrad);
 void backward(V gradient);
 void backward();
 ```
@@ -403,7 +423,7 @@ V apply(V incomingGradient, V leftOperand, V rightOperand);
   the opposite operand for each contribution.
 - `mapContext(leftContext, rightContext)` and `applyBinaryOperator(other, forward,
   leftGradient, rightGradient, contextMapper)` are public integration hooks for interface
-  defaults. The base class provides final binary graph construction and traversal,
+  defaults. The base class provides overridable binary graph construction and graph-wide traversal,
   but no longer defines value-level addition. Raw Float implementations supply their own add.
 - Unchanged-gradient addition is appropriate for scalars and shape-compatible elementwise
   tensor addition. Broadcasting reductions and non-elementwise tensor product rules need
@@ -473,29 +493,30 @@ in-place methods `add_(V)` and `sub_(V)`. This is twelve methods in total:
 
 | Legacy method | Purpose | New module status |
 | --- | --- | --- |
-| `float[] getDataAsFloatArray()` | Read numerical contents as a float array | Pending; accessor name to agree |
+| `float[] getDataAsFloatArray()` | Read numerical contents as a float array | Provisional `dataAsFloatArray()`; unimplemented |
 | `V add(V other)` | Add another value | Implemented |
-| `V add(float other)` | Add a scalar constant | Pending |
+| `V add(float other)` | Add a scalar constant | Provisional signature; unimplemented |
 | `V sub(V other)` | Subtract another value | Implemented |
-| `V sub(float other)` | Subtract a scalar constant | Pending |
+| `V sub(float other)` | Subtract a scalar constant | Provisional signature; unimplemented |
 | `V mul(V other)` | Multiply by another value | Implemented |
-| `V mul(float other)` | Multiply by a scalar constant | Pending |
+| `V mul(float other)` | Multiply by a scalar constant | Provisional signature; unimplemented |
 | `V div(V other)` | Divide by another value | Implemented |
-| `V div(float other)` | Divide by a scalar constant | Pending |
+| `V div(float other)` | Divide by a scalar constant | Provisional signature; unimplemented |
 | `V neg()` | Negate a value | Implemented |
-| `V gt(float value)` | Compare with a scalar threshold: greater than | Pending |
-| `V gte(float value)` | Compare with a scalar threshold: greater than or equal | Pending |
+| `V gt(float value)` | Compare with a scalar threshold: greater than | Provisional signature; unimplemented |
+| `V gte(float value)` | Compare with a scalar threshold: greater than or equal | Provisional signature; unimplemented |
 
-This agrees the operation list, not every future method contract. Add each pending
-method incrementally with its Javadoc, agreed semantics, implementation, and tests.
+The pending signatures are now exposed for cross-project contract review, with
+Javadoc and throwing defaults only. Final semantics, implementation, and meaningful
+behavioural tests remain separate increments.
 All operations preserve operand numerical contents; graph/gradient bookkeeping
 continues to follow the existing contracts. The legacy implementation remains reference
 material and is not modified by these increments.
 
-Before introducing the pending methods, settle the following details:
+Before implementing the provisional methods, settle the following details:
 
-- Float-array access: choose an accessor name following the `x()` convention (for
-  example `dataAsFloatArray()`), copy/alias semantics, tensor flattening order, and
+- Float-array access: `dataAsFloatArray()` follows the `x()` accessor convention;
+  its name is provisional for integration review. Settle copy/alias semantics, tensor flattening order, and
   conversion behaviour for future non-float data. Reading is not differentiation.
 - Scalar overloads: define constant-value construction and tensor shape/context
   handling without accidentally requesting gradients for the supplied scalar.
@@ -528,3 +549,265 @@ other legacy tensor operations such as slicing or concatenation.
   division. Float overloads are not introduced in this increment.
 
 ## Decisions still to finalise
+
+## Provisional arithmetic signatures for integration review
+
+At the user's request, ArithmeticOperations exposes the seven remaining signatures:
+
+```java
+float[] dataAsFloatArray();
+V add(float other);
+V sub(float other);
+V mul(float other);
+V div(float other);
+V gt(float value);
+V gte(float value);
+```
+
+These are default methods throwing UnsupportedOperationException without evaluating
+numerical data or changing graph/gradient state. This keeps existing implementations
+buildable while external adapters can compile calls or override the proposed methods.
+DifferentiableArithmeticOperations inherits all seven methods; it supplies no new
+forward or derivative implementation. Scalar arguments represent constants, not
+independently tracked operands. Comparison return type V does not promise differentiability.
+Array ownership/conversion, scalar construction/broadcasting, and comparison policies
+remain unresolved as listed above. Existing working arithmetic defaults are unchanged.
+
+## Agreed extension: overridable operator construction
+
+At the user's request, AutogradValueImpl.applyBinaryOperator and applyUnaryOperator
+are non-final. Subclasses can wrap forward operations and derivative rules and delegate
+to super, supporting tensor broadcast-gradient reduction and backend recording.
+Overrides must preserve lazy evaluation, context mapping once, ordered graph inputs
+(including duplicate binary operands), gradient requirements, local accumulation,
+constant/absent-gradient handling, non-mutating operands, and higher-derivative
+dependencies. Existing signatures and default method bodies are unchanged.
+This enables extension; it does not implement tensor broadcasting or native gradients.
+
+## Agreed interface: `org.ml4j.autograd.AutogradValueFactory<V, D, C>`
+
+Purpose: create autograd leaves with an explicit caller-selected gradient requirement.
+The self-type bound is V extends AutogradValue<V, D, C>. This is a functional interface.
+
+```java
+V create(Supplier<D> data, C context, boolean requiresGrad);
+```
+
+- Returns a new non-null leaf without evaluating numerical data or modifying existing
+  values/gradients. Inputs are empty, the backward callback is absent, and its gradient
+  is initially absent. requiresGrad() matches the supplied boolean.
+- Rejects a null supplier with NullPointerException. Supplied data/context follow
+  Value's stable, compatible numerical-data contract, including non-null successful
+  evaluations and null context only when metadata is unnecessary. Caching is an
+  implementation choice; no supplier or numerical-result identity is promised.
+- Scalar factories can accept Float data with Void context; tensor factories can
+  accept backend numerical data with shape context. No backend dependency is introduced.
+- There is no two-argument overload or implicit gradient requirement. Operation-result
+  construction with graph inputs remains separate. No concrete factory is added in
+  this increment, and tensor-project callers remain to be migrated.
+
+### Tensor migration decision: properties
+
+AutogradValueProperties is not restored. Tensor adapters will use explicit data,
+context, requiresGrad, and input-node arguments in constructors/result construction.
+Naming and graph flags require separate decisions; they are not silently transferred
+into the new factory contract. Registry exclusion is agreed below.
+
+### Tensor migration decision: no core registry
+
+AutogradValueRegistry is not restored in the new core. Backward discovers reachable
+values through graph inputs; model parameter enumeration belongs to the model.
+Unreachable Java graph objects are eligible for garbage collection, without a
+registry holding strong references to them.
+
+The tensor migration must review existing registry enumeration and clearAutogradGraph
+calls individually. Release references to completed results and reset stored gradients
+when no longer needed; retained gradient expressions can themselves retain forward
+graph dependencies. Gradient reset does not release previously returned expressions.
+Backend native-resource ownership and cleanup remain unresolved migration work:
+Java graph collection alone does not establish safe DJL/ND4J resource release.
+This decision adds no graph-release API and makes no tensor-project changes.
+
+## Agreed increment: leaf gradient toggling
+
+AutogradValue adds void setRequiresGrad(boolean requiresGrad), implemented by the
+base class. Only leaves (empty graph-input lists) accept calls; operation results
+throw IllegalStateException even for unchanged-flag requests. Leaf calls are idempotent
+and do not evaluate data, change numerical contents/context/nodes, or clear gradients.
+Resetting stored gradients remains explicit. Factory requiresGrad is the initial flag.
+
+Callers toggle before constructing the next graph and must finish backward and any
+higher derivatives on prior graphs before toggling involved leaves. Existing results
+retain their original flags; no recursive update, graph rebuilding, or outstanding-graph
+detection is provided. Backward callbacks read current operand requirements, so reuse
+of earlier graphs after toggling their leaves is unsupported. Execution remains sequential.
+The setter is overridable for future backend synchronization, subject to these rules.
+
+Native-gradient recording, selection, and suppliers are deferred. Initial tensor
+migration uses library derivative rules; backend native-resource ownership remains
+separate work. No native-gradient or tensor-project implementation is added here.
+
+## Agreed utility: `org.ml4j.autograd.CachingDataSupplier<D>`
+
+A final optional Supplier<D> implementation, constructed from Supplier<? extends D>.
+Construction rejects null with NullPointerException without evaluating data. get()
+evaluates lazily and caches the first successful non-null result, returning that same
+object thereafter. Source exceptions propagate and null results cause
+NullPointerException; both leave the cache empty so later calls retry.
+
+After success the wrapper releases its source closure reference. It exposes no reset,
+invalidation, or cache-state methods. Sequential use only; no thread-safety guarantee.
+Callers must preserve cached numerical contents to satisfy Value stability. It performs
+no native-resource cleanup. Tensor adapters can opt in to cache random generation or
+native-array allocation; the core base class still leaves caching optional. This class
+implements Supplier, not the DataSupplier owner capability. The legacy clearCache()
+contract is not restored. Tensor integration remains a separate migration increment.
+
+## Agreed interface: `org.ml4j.autograd.Parameter<V>`
+
+Purpose: hold a replaceable current autograd leaf through a stable parameter handle.
+The bound is V extends AutogradValue<V, ?, ?>.
+
+```java
+V value();
+void replace(V value);
+```
+
+- value() returns the non-null current leaf without numerical evaluation, with the
+  same identity until replacement. Leaves have empty graph-input lists.
+- replace selects the supplied leaf for future reads without numerical evaluation.
+  Null causes NullPointerException and graph inputs cause IllegalArgumentException;
+  invalid replacement preserves the current reference. Replacing with the current
+  leaf is permitted. Neither old nor new leaf's data, context, graph, gradient flag,
+  or stored gradient is modified. Fresh training steps should supply fresh leaves.
+- Callers provide values compatible with the model's numerical type and context
+  (including tensor shape); compatibility validation is implementation-defined.
+- Parameter is the mutable selection handle; Value numerical contents remain stable
+  for life. Forward graphs capture returned leaves rather than live parameter reads,
+  so previously built graphs retain old values after replacement.
+- Use sequentially. No arithmetic, optimizer, gradient storage, native-resource
+  cleanup, or concurrent replacement/graph-construction contract is introduced.
+- This increment introduces only the interface and documentation. Concrete handle
+  implementation and tensor/GPT migration remain separate increments.
+
+## Implementation: `org.ml4j.autograd.impl.ParameterImpl<V>`
+
+Final Parameter implementation constructed from a non-null autograd leaf. Constructor
+and replace validate empty graph-input lists without evaluating data. Validation
+completes before assignment, so rejected replacement preserves the current reference.
+value returns the held leaf; replacement changes only that reference. Existing values,
+gradients, and graphs remain unchanged. Model numerical/context compatibility is the
+caller's responsibility; no tensor shape validation or native-resource cleanup is added.
+Sequential use only. Tensor/GPT integration remains a separate migration increment.
+
+### Tensor migration decision: gradient access and reset
+
+Tensor callers will replace legacy grad() (nullable) with gradNode().gradient()
+(Optional), and resetGradient() with gradNode().reset(). No legacy aliases are added
+in the core. The gradient node is the stable handle; its stored expression can change.
+Previously returned gradient values do not refresh after another pass. Callers read
+the handle again for the latest gradient and handle absence explicitly. This records
+the migration choice only; tensor callers remain unchanged in this increment.
+
+### Tensor migration decision: implicit backward seed
+
+Tensor adapters will override defaultGradient() to supply a constant leaf containing
+ones with the same shape/context as the result and requiresGrad false. This preserves
+the tensor project's implicit backward seed policy; backward(seed) remains available
+for explicit compatible seeds. Replace the legacy multiplicativeIdentity hook with
+this adapter override. The core default still requires an explicit seed unless a
+subclass defines one. This records the decision; adapter changes remain deferred.
+
+### Tensor migration decision: backward configuration
+
+BackwardConfig is not restored. Tensor callers will use backward() or backward(seed)
+without configuration, following the core's existing derivative-recording and graph-
+retention policy. Derivative expressions preserve higher-derivative dependencies where
+operation rules support them; graphs remain available for repeated passes. Native-
+gradient selection and configurable recording/retention policies remain deferred.
+This decision records migration direction; tensor callers are not changed here.
+
+### Tensor migration decision: broadcast-gradient reduction
+
+Preserve the tensor adapter's existing reduction of output-shaped gradient
+contributions back to each broadcast operand's original shape. Migrate its
+applyBinaryOperator override to BinaryGradient<V>, whose arguments are incoming
+gradient, left operand, and right operand, and delegate wrapped rules to super.
+The adapter retains its shape checks and sum/squeeze reduction logic; the generic
+core provides no automatic tensor broadcasting reduction. Validate scalar/tensor,
+leading-axis, and singleton-axis broadcasting during adapter migration. This records
+the decision only; no tensor code is changed here.
+
+### Tensor migration decision: scalar arithmetic overloads
+
+Tensor add(float), sub(float), mul(float), and div(float) will use the unary
+operator helper with the float captured as a fixed constant. Each operation records
+only the tensor input and preserves its shape/context. No scalar leaf is constructed,
+no gradient is calculated for the float, and these overloads require no separate
+scalar-tensor broadcasting. Value overloads remain available for tracked operands.
+
+Forward evaluation delegates to wrapped numerical scalar operations. Incoming-gradient
+contributions are unchanged for add/sub, multiplied by the constant for mul, and
+divided by the constant for div. Contributions use differentiable operations to
+preserve higher-derivative dependencies. Numerical boundary behaviour follows the
+backend arithmetic; no regularisation is introduced. Implement these operations
+in the tensor adapter during migration. Existing provisional core defaults still
+throw UnsupportedOperationException; this increment records the decision only.
+
+### Tensor migration decision: constant comparison masks
+
+Tensor gt(float) and gte(float) will lazily produce elementwise float masks: 1 where
+true and 0 where false, preserving tensor shape/context. Results are constant leaves
+with requiresGrad false, empty graph inputs, and no backward callback. The adapter
+will construct them directly through createAutogradValue rather than the unary helper,
+which inherits the operand's gradient requirement. Capturing an input data supplier
+for lazy evaluation does not establish a differentiable graph edge.
+
+Gradients do not flow through comparisons. ReLU can use gt(0f) as a constant
+multiplier in its own derivative rule. Higher derivatives follow this fixed-mask
+convention; no derivative of the comparison or mathematical smoothness at a threshold
+is promised. Finalise/document backend boundary behaviour and validate equality,
+non-finite inputs, mask data/shape, constant status, and ReLU propagation during tensor
+migration. Provisional core comparison defaults remain unsupported; no tensor code
+is changed in this decision increment.
+
+### Tensor migration decision: float-array access ownership
+
+Migrate getDataAsFloatArray() to dataAsFloatArray(). Successful reads return a
+non-null float array representing numerical contents in the backend's documented
+flattening order. The backend may return a copy or shared storage; copying and
+zero-copy access are not guaranteed. Callers must treat the returned array as
+read-only, even when a particular backend currently copies. Callers needing editable
+storage explicitly copy the array. Java arrays do not enforce this restriction.
+Access can evaluate numerical data and require conversion or transfer; it does not
+change graph/gradient state. Non-float conversion details and backend flattening
+order must be documented during adapter migration. No mandatory copy is introduced.
+The provisional default remains unsupported until implemented.
+
+### Tensor migration decision: remove inline numerical operations
+
+Remove add_ and sub_ from tensor adapters/API during migration, consistent with the
+core's lifetime-stable numerical contents. Use functional add/sub for arithmetic
+and new leaves through Parameter.replace for optimizer updates. Source review found
+no direct add_/sub_ production calls in minimal-maven-project; both numerical adapters
+still declare the methods and the DL4J adapter test asserts their in-place behaviour.
+Remove those obsolete mutation assertions when migrating the adapters, retaining
+functional arithmetic validation. Tensor code is unchanged in this decision increment.
+
+### Tensor migration decision: names outside core values
+
+Do not restore name() or name_() on core Value, AutogradValue, or Parameter contracts.
+The model stores parameter names separately, for example in Map<String, Parameter<T>>.
+Names identify stable handles and remain associated when their current leaves are
+replaced. Existing tensor naming usages will be removed or moved to model metadata
+during migration. Operation/debug labels are optional future metadata, not part of
+this increment or the core numerical-value contract.
+
+### Tensor migration decision: copying deferred
+
+Tensor copying is excluded from the current migration scope. Do not restore core
+copy/mapped-value constructors or introduce tensor copy semantics now. Sharing versus
+duplicating numerical storage and retaining versus detaching graph connections remain
+unresolved. Review existing copy-constructor callers during migration; adapt necessary
+callers within supported explicit construction or report blockers, without silently
+choosing copy semantics. No tensor constructors or callers are changed here.

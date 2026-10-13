@@ -21,6 +21,12 @@ import java.util.function.UnaryOperator;
  * Tensor types with broadcasting or non-elementwise multiplication must override
  * the relevant defaults to provide appropriate shape and derivative rules.
  *
+ * <p>Proposed scalar overloads, dataAsFloatArray(), gt(float), and gte(float)
+ * are inherited from ArithmeticOperations as unimplemented defaults. Scalar arguments
+ * represent constants rather than independently tracked operands; construction and
+ * broadcasting rules remain unresolved. Array access is numerical access, and no
+ * comparison derivative policy is established by this interface.
+ *
  * @param <V> the differentiable operand and result type
  * @param <D> the wrapped numerical type implementing arithmetic
  * @param <C> the context type, such as shape or Void

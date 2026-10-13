@@ -1,7 +1,7 @@
 package org.ml4j.autograd.arithmetic;
 
 /**
- * Defines non-mutating numerical addition, subtraction, multiplication, division, and negation.
+ * Defines non-mutating numerical arithmetic and proposed data-access and comparison capabilities.
  *
  * <p>A scalar wrapper can add or multiply its stored floats. A tensor type can
  * supply corresponding operations on compatible numerical data and shapes.
@@ -10,6 +10,10 @@ package org.ml4j.autograd.arithmetic;
  * Methods return non-null results without changing either operand. Numerical
  * implementations define compatibility and the precise meaning of multiplication;
  * the differentiable defaults require the ordinary product rule to be applicable.
+ *
+ * <p>Scalar overloads, float-array access, and threshold comparisons are provisional
+ * integration signatures. Their defaults throw UnsupportedOperationException until
+ * implemented; conversion, broadcasting, and comparison policies remain unresolved.
  *
  * @param <V> the operand and result type
  */
@@ -60,4 +64,97 @@ public interface ArithmeticOperations<V extends ArithmeticOperations<?>> {
      * @return a non-null negated value
      */
     V neg();
+
+    /**
+     * Proposes reading numerical contents as a float array.
+     *
+     * <p>Array ownership, tensor flattening order, and conversion rules remain unresolved.
+     * This default does not evaluate data.
+     *
+     * @return numerical contents when implemented
+     * @throws UnsupportedOperationException always in this unimplemented default
+     */
+    default float[] dataAsFloatArray() {
+        throw new UnsupportedOperationException("dataAsFloatArray is not implemented");
+    }
+
+    /**
+     * Proposes adding a scalar constant without mutating this value.
+     *
+     * <p>Constant construction and tensor broadcasting/context rules remain unresolved.
+     *
+     * @param other the scalar constant
+     * @return the arithmetic result when implemented
+     * @throws UnsupportedOperationException always in this unimplemented default
+     */
+    default V add(float other) {
+        throw new UnsupportedOperationException("add(float) is not implemented");
+    }
+
+    /**
+     * Proposes subtracting a scalar constant without mutating this value.
+     *
+     * <p>Constant construction and tensor broadcasting/context rules remain unresolved.
+     *
+     * @param other the scalar constant
+     * @return the arithmetic result when implemented
+     * @throws UnsupportedOperationException always in this unimplemented default
+     */
+    default V sub(float other) {
+        throw new UnsupportedOperationException("sub(float) is not implemented");
+    }
+
+    /**
+     * Proposes multiplying by a scalar constant without mutating this value.
+     *
+     * <p>Constant construction and tensor broadcasting/context rules remain unresolved.
+     *
+     * @param other the scalar constant
+     * @return the arithmetic result when implemented
+     * @throws UnsupportedOperationException always in this unimplemented default
+     */
+    default V mul(float other) {
+        throw new UnsupportedOperationException("mul(float) is not implemented");
+    }
+
+    /**
+     * Proposes dividing by a scalar constant without mutating this value.
+     *
+     * <p>Constant construction and tensor broadcasting/context rules remain unresolved.
+     *
+     * @param other the scalar constant
+     * @return the arithmetic result when implemented
+     * @throws UnsupportedOperationException always in this unimplemented default
+     */
+    default V div(float other) {
+        throw new UnsupportedOperationException("div(float) is not implemented");
+    }
+
+    /**
+     * Proposes comparing this value with a scalar threshold: greater than.
+     *
+     * <p>Result encoding, tensor elementwise rules, non-finite behaviour, and
+     * differentiation policy remain unresolved. Returning V promises no derivative rule.
+     *
+     * @param value the scalar threshold
+     * @return the comparison result when implemented
+     * @throws UnsupportedOperationException always in this unimplemented default
+     */
+    default V gt(float value) {
+        throw new UnsupportedOperationException("gt(float) is not implemented");
+    }
+
+    /**
+     * Proposes comparing this value with a scalar threshold: greater than or equal to.
+     *
+     * <p>Result encoding, tensor elementwise rules, non-finite behaviour, and
+     * differentiation policy remain unresolved. Returning V promises no derivative rule.
+     *
+     * @param value the scalar threshold
+     * @return the comparison result when implemented
+     * @throws UnsupportedOperationException always in this unimplemented default
+     */
+    default V gte(float value) {
+        throw new UnsupportedOperationException("gte(float) is not implemented");
+    }
 }

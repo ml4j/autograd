@@ -383,3 +383,184 @@ Status: complete. Added numerical and differentiable value division for raw/wrap
 floats. Six tests cover lazy evaluation, seeds, constants, shared operands, repeated
 passes, higher derivatives, and IEEE boundaries. The standalone `./mvnw -o verify`
 build passed with all seventy tests. Scalar overloads remain pending; legacy unchanged.
+
+## Current increment: provisional arithmetic signatures
+
+Expose the seven pending methods for cross-project compatibility review without
+implementing numerical operations or derivative rules. Use throwing interface defaults
+to preserve existing implementers; DifferentiableArithmeticOperations inherits them.
+Document provisional signatures and unresolved semantics in Javadoc and SPEC.md.
+
+Status: complete. Added seven provisional signatures and documented their inherited
+unsupported defaults and unresolved contracts. `./mvnw -o verify` passed with all
+seventy existing tests and produced the integration JAR. External-project compatibility
+has not yet been checked. No numerical or derivative implementation was added.
+
+## Current increment: overridable operator construction
+
+Remove final from the binary and unary graph-construction helpers in AutogradValueImpl.
+Document override requirements and delegation for tensor/backend integration.
+Preserve signatures and existing helper behaviour.
+
+Status: complete. Both helpers are overridable and their Javadoc and SPEC.md record
+the extension requirements. `./mvnw -o verify` passed with all seventy tests.
+No helper bodies or tensor adapters changed.
+
+## Current increment: standalone data-access capability
+
+Introduce DataSupplier<D> with deferred Supplier<D> data() access. Make Value<D, C>
+extend it while retaining its existing stronger data() contract and declaration.
+Document the capability separately from numerical stability and context.
+
+Status: complete. Added the documented interface and Value inheritance; existing
+data-access guarantees remain unchanged. `./mvnw -o verify` passed with all seventy
+tests. No implementation or dependency changes were needed.
+
+## Current increment: explicit-gradient leaf factory contract
+
+Introduce AutogradValueFactory<V, D, C> with create(data, context, requiresGrad).
+Document deferred leaf creation and the explicit gradient choice. Add no concrete
+factory, two-argument overload, dependencies, or tensor-project changes.
+Record the agreed exclusion of AutogradValueProperties from the new library.
+
+Status: complete. Added the documented factory interface and matching specification.
+`./mvnw -o verify` passed with all seventy existing tests. No concrete factory or
+tensor-project changes were made.
+
+## Current increment: exclude the core registry
+
+Record the agreed exclusion of AutogradValueRegistry. Keep model parameter lists
+at application level; defer tensor registry-call migration and backend resource
+ownership/cleanup to separate increments.
+
+Status: complete. SPEC.md records the decision and retained-gradient/resource
+limitations. Reviewed against graph traversal and gradient-reset contracts.
+Documentation only; no runtime or tensor-project changes, and no build required.
+
+## Current increment: leaf gradient toggling
+
+Add setRequiresGrad(boolean) to AutogradValue and the base implementation. Allow
+leaves only, preserve stored gradients/data/nodes, and document graph timing rules.
+Test future graph tracking, rejection on operation results, and unchanged state.
+Record native-gradient integration as deferred.
+
+Status: complete. Added the setter, leaf-only implementation, Javadoc/specification,
+and three focused tests for toggling and unchanged state. `./mvnw -o verify` passed
+with all seventy-three tests. Native gradients and tensor-project migration remain deferred.
+
+## Current increment: optional lazy data caching
+
+Add CachingDataSupplier<D> as a final Supplier utility. Cache successful non-null
+results, retry failures/nulls, and provide no reset/invalidation. Test deferred reads,
+identity, retries, null rejection, and use as an autograd numerical-data supplier.
+Keep base-class caching optional and tensor integration deferred.
+
+Status: complete. Added the documented utility, matching specification, and four
+focused tests. `./mvnw -o verify` passed with all seventy-seven tests. Core caching
+policy and tensor-project code remain unchanged.
+
+## Current increment: stable parameter-handle contract
+
+Introduce Parameter<V> with value() and replace(V), separating replaceable parameter
+selection from stable Value numerical data. Document leaves, null/error handling,
+reference/gradient preservation, model compatibility, and existing graph semantics.
+Add only the interface and update Value documentation; defer implementation and
+model migration.
+
+Status: complete. Added Parameter and linked the responsibility distinction in
+Value Javadoc and SPEC.md. `./mvnw -o verify` passed with all seventy-seven tests.
+No concrete parameter implementation or tensor-project changes were added.
+
+## Current increment: parameter-handle implementation
+
+Add ParameterImpl in the core impl package, validating non-null leaves before
+assignment. Test lazy access/replacement, preserved gradient/flag/node state,
+invalid-input handling, and old/new graph differentiation after replacement.
+Leave tensor compatibility to callers and defer model integration.
+
+Status: complete. Added the documented implementation and three focused tests.
+`./mvnw -o verify` passed with all eighty tests. No tensor-project or dependency
+changes were made.
+
+## Current increment: gradient-access migration decision
+
+Keep Optional gradient access and explicit gradient-node reset. Add no legacy aliases.
+
+Status: complete. Recorded caller migration and stable-handle/replaced-expression
+semantics in SPEC.md; reviewed against existing GradNode and AutogradValue contracts.
+Documentation only; no build or tensor-project changes.
+
+## Current increment: tensor implicit-seed migration decision
+
+Use a constant same-shape leaf of ones from tensor defaultGradient() overrides.
+Preserve explicit backward seeds and the generic core's existing default behaviour.
+
+Status: complete. Recorded the policy in SPEC.md and checked it against the existing
+backward/defaultGradient contract. Documentation only; no tensor changes or build.
+
+## Current increment: backward-configuration migration decision
+
+Exclude BackwardConfig and migrate callers to the existing unconfigured backward
+methods. Keep native gradients and configurable graph policies deferred.
+
+Status: complete. SPEC.md records the decision, reviewed against existing backward
+policies. Documentation only; no runtime or tensor-project changes and no build.
+
+## Current increment: broadcast-gradient migration decision
+
+Retain tensor broadcast-gradient reduction through the overridable binary helper,
+using the new BinaryGradient signature and delegation to the base implementation.
+
+Status: complete. Recorded adapter responsibilities and migration validation scope
+in SPEC.md, consistent with the operator extension contract. Documentation only;
+no tensor changes or build.
+
+## Current increment: tensor scalar-overload migration decision
+
+Preserve legacy unary graph construction for fixed float constants, retaining tensor
+shape and differentiable contribution rules without constructing scalar leaves.
+
+Status: complete. Recorded forward/derivative rules and migration scope in SPEC.md.
+Documentation only; provisional defaults and tensor code are unchanged. No build.
+
+## Current increment: tensor comparison-mask migration decision
+
+Use lazy constant leaves for gt/gte masks, with no graph inputs or backward callback.
+Retain mask use in ReLU's derivative and defer boundary validation to implementation.
+
+Status: complete. Recorded construction, differentiation, and validation requirements
+in SPEC.md. Documentation only; no runtime/tensor changes or build.
+
+## Current increment: float-array ownership decision
+
+Allow dataAsFloatArray to return copied or shared storage with read-only caller
+usage. Backend flattening/conversion is documented during migration; editable access
+requires an explicit caller copy.
+
+Status: complete. Recorded ownership and access semantics in SPEC.md. Documentation
+only; provisional defaults and tensor implementations are unchanged. No build.
+
+## Current increment: tensor inline-operation removal decision
+
+Remove adapter add_/sub_ methods during migration and use stable-value arithmetic
+and parameter replacement. Check production/test callers before removal.
+
+Status: complete. Source search found only adapter declarations and DL4J mutation-test
+calls; recorded their migration in SPEC.md. No runtime/tensor changes or build.
+
+## Current increment: parameter naming decision
+
+Keep names in model maps associated with stable Parameter handles; restore neither
+name() nor name_() in core interfaces. Defer optional operation/debug metadata.
+
+Status: complete. Recorded the decision in SPEC.md. Documentation only; no runtime
+or tensor-project changes and no build.
+
+## Current increment: defer tensor copying
+
+Exclude tensor copy support for now; leave storage and graph semantics unresolved.
+Review existing copy-constructor callers during migration before removing unsupported
+paths, without adding core copy constructors.
+
+Status: complete. Recorded scope in SPEC.md. Documentation only; no runtime/tensor
+changes or build.

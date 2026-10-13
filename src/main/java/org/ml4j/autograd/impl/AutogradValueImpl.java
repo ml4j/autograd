@@ -50,7 +50,7 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
 
     private final Supplier<D> data;
     private final C context;
-    private final boolean requiresGrad;
+    private boolean requiresGrad;
     private final ValueNode<V> valueNode;
     private final GradNode<V> gradNode;
 
@@ -94,6 +94,15 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
     @Override public final boolean requiresGrad() { return requiresGrad; }
 
     /** {@inheritDoc} */
+    @Override
+    public void setRequiresGrad(boolean requiresGrad) {
+        if (!valueNode.inputs().isEmpty()) {
+            throw new IllegalStateException("Only leaves can change their gradient requirement");
+        }
+        this.requiresGrad = requiresGrad;
+    }
+
+    /** {@inheritDoc} */
     @Override public final ValueNode<V> valueNode() { return valueNode; }
 
     /** {@inheritDoc} */
@@ -107,6 +116,13 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      * The node callback receives the forward result value and extracts its gradient
      * before invoking the separate left/right derivative rules.
      *
+     * <p>Subclasses may wrap forward operations or derivative rules, for example to
+     * reduce broadcast tensor gradients or record backend operations, then delegate
+     * to super. Overrides must preserve lazy evaluation, context mapping once,
+     * ordered inputs including duplicates, combined gradient requirements, and local
+     * accumulation without mutating operands. Derivative rules must preserve
+     * higher-derivative dependencies and skip constants and absent gradients.
+     *
      * @param other the right operand
      * @param forward the numerical operation
      * @param leftGradient the left operand's contribution rule
@@ -114,7 +130,7 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      * @param contextMapper maps operand metadata to output metadata
      * @return the concrete result, requiring gradients if either operand does
      */
-    public final V applyBinaryOperator(V other, BinaryOperator<D> forward,
+    public V applyBinaryOperator(V other, BinaryOperator<D> forward,
                                           BinaryGradient<V> leftGradient, BinaryGradient<V> rightGradient,
                                           BinaryOperator<C> contextMapper) {
         Objects.requireNonNull(other, "other");
@@ -150,13 +166,20 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      * result's incoming gradient and passes it with the original operand to the rule.
      * Constants and absent gradients cause no propagation; accumulation is local.
      *
+     * <p>Subclasses may wrap the forward operation or derivative rule for backend
+     * integration, then delegate to super. Overrides must preserve lazy evaluation,
+     * context mapping once, the single ordered input, the operand's gradient
+     * requirement, and local accumulation without mutating the operand. Derivative
+     * rules must preserve higher-derivative dependencies and skip constants and
+     * absent gradients.
+     *
      * @param forward the non-null numerical operation
      * @param gradient the non-null operand contribution rule
      * @param contextMapper the non-null output context mapper
      * @return the lazy concrete result, preserving the operand's gradient requirement
      * @throws NullPointerException if an argument is null
      */
-    public final V applyUnaryOperator(UnaryOperator<D> forward, UnaryGradient<V> gradient,
+    public V applyUnaryOperator(UnaryOperator<D> forward, UnaryGradient<V> gradient,
                                       UnaryOperator<C> contextMapper) {
         Objects.requireNonNull(forward, "forward");
         Objects.requireNonNull(gradient, "gradient");

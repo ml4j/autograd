@@ -71,6 +71,25 @@ public interface AutogradValue<V extends AutogradValue<V, D, C>, D, C>
     boolean requiresGrad();
 
     /**
+     * Changes whether future graphs calculate this leaf's gradient.
+     *
+     * <p>For example, a scalar or tensor parameter can enable tracking before
+     * building a training graph and disable it before building an inference graph.
+     * Only leaves (values with no graph inputs) can change this flag. Set it before
+     * constructing the next graph; do not change it while a graph involving this
+     * leaf is still needed for backward or higher derivatives.
+     *
+     * <p>Existing operation results keep their original gradient requirements.
+     * Numerical data, context, graph nodes, and stored gradients are unchanged;
+     * clearing a gradient requires an explicit gradient-node reset. The implementation
+     * does not detect outstanding graphs or support concurrent toggling/backward.
+     *
+     * @param requiresGrad whether future differentiation should calculate this leaf's gradient
+     * @throws IllegalStateException if this value has graph inputs, even if the flag is unchanged
+     */
+    void setRequiresGrad(boolean requiresGrad);
+
+    /**
      * Propagates a supplied seed gradient through this value's reachable graph.
      *
      * <p>A scalar seed of one differentiates the scalar result itself. For a tensor
