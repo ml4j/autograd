@@ -348,3 +348,25 @@ Preserve historical decisions as history; validate the standalone build and wrap
 Status: complete. Renamed the interface, implementation, all callers and examples,
 and updated SPEC.md. The standalone `./mvnw -o verify` build passed with all
 sixty-four tests; the wrapper demo matched its expected outputs. No legacy changes.
+
+## Current increment: arithmetic operation scope
+
+Record all twelve non-inline methods from legacy ArithmeticOperations in SPEC.md,
+with implemented/pending status and unresolved semantics distinguished from scope.
+Exclude add_ and sub_. This increment documents scope only; review completeness
+against the legacy interface without adding signatures or implementation.
+
+Status: complete. SPEC.md lists all twelve methods, identifies the four implemented
+methods, and records pending contract decisions. Reviewed against the legacy
+interface; no code, public signatures, or established semantics changed.
+
+## Planned arithmetic increments
+
+- [x] Value addition, multiplication, negation, and subtraction.
+- [ ] Value division, with agreed numerical and derivative rules.
+- [ ] Scalar overloads for add, sub, mul, and div, with agreed constant construction.
+- [ ] Float-array access, with agreed name and data conversion/ownership policy.
+- [ ] Scalar-threshold gt and gte, with agreed result and differentiation policies.
+
+Suggested order only: each increment still requires agreement before implementation.
+Inline add_ and sub_ are excluded.

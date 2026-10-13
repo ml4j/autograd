@@ -465,4 +465,48 @@ proof-of-concept implementations are reference material, not code to copy wholes
 - Direct single-node subtraction is deferred; tensor performance may motivate a
   separately agreed implementation change later.
 
+## Agreed scope: arithmetic operations
+
+Implement the functionality of every method declared in the legacy
+`org.ml4j.autograd.arithmetic.operations.ArithmeticOperations<V>` except the
+in-place methods `add_(V)` and `sub_(V)`. This is twelve methods in total:
+
+| Legacy method | Purpose | New module status |
+| --- | --- | --- |
+| `float[] getDataAsFloatArray()` | Read numerical contents as a float array | Pending; accessor name to agree |
+| `V add(V other)` | Add another value | Implemented |
+| `V add(float other)` | Add a scalar constant | Pending |
+| `V sub(V other)` | Subtract another value | Implemented |
+| `V sub(float other)` | Subtract a scalar constant | Pending |
+| `V mul(V other)` | Multiply by another value | Implemented |
+| `V mul(float other)` | Multiply by a scalar constant | Pending |
+| `V div(V other)` | Divide by another value | Pending |
+| `V div(float other)` | Divide by a scalar constant | Pending |
+| `V neg()` | Negate a value | Implemented |
+| `V gt(float value)` | Compare with a scalar threshold: greater than | Pending |
+| `V gte(float value)` | Compare with a scalar threshold: greater than or equal | Pending |
+
+This agrees the operation list, not every future method contract. Add each pending
+method incrementally with its Javadoc, agreed semantics, implementation, and tests.
+All operations preserve operand numerical contents; graph/gradient bookkeeping
+continues to follow the existing contracts. The legacy implementation remains reference
+material and is not modified by these increments.
+
+Before introducing the pending methods, settle the following details:
+
+- Float-array access: choose an accessor name following the `x()` convention (for
+  example `dataAsFloatArray()`), copy/alias semantics, tensor flattening order, and
+  conversion behaviour for future non-float data. Reading is not differentiation.
+- Scalar overloads: define constant-value construction and tensor shape/context
+  handling without accidentally requesting gradients for the supplied scalar.
+- Division: specify scalar/elementwise semantics, zero and non-finite behaviour,
+  compatible shapes, and differentiable rules supporting higher derivatives.
+- Comparisons: define the returned value representation, tensor elementwise behaviour,
+  and differentiation policy, including thresholds and non-finite inputs. Returning
+  `V` in the legacy API does not by itself establish a differentiable comparison.
+
+Tensor broadcasting, numerical compatibility, and backend-specific behaviour must
+be agreed as the relevant implementations are introduced. This scope does not add
+other legacy tensor operations such as slicing or concatenation.
+
 ## Decisions still to finalise
