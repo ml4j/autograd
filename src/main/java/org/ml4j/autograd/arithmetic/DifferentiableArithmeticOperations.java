@@ -21,11 +21,10 @@ import java.util.function.UnaryOperator;
  * Tensor types with broadcasting or non-elementwise multiplication must override
  * the relevant defaults to provide appropriate shape and derivative rules.
  *
- * <p>Proposed scalar overloads, dataAsFloatArray(), gt(float), and gte(float)
- * are inherited from ArithmeticOperations as unimplemented defaults. Scalar arguments
- * represent constants rather than independently tracked operands; construction and
- * broadcasting rules remain unresolved. Array access is numerical access, and no
- * comparison derivative policy is established by this interface.
+ * <p>Scalar overloads capture fixed constants, preserve context, and record one input.
+ * Threshold comparisons produce constant masks without differentiable graph inputs.
+ * Forward arithmetic and numerical boundary behaviour are supplied by wrapped data.
+ * Implementations supply dataAsFloatArray() for their numerical representation.
  *
  * @param <V> the differentiable operand and result type
  * @param <D> the wrapped numerical type implementing arithmetic
@@ -143,6 +142,114 @@ public interface DifferentiableArithmeticOperations<V extends AutogradValue<V, D
                 (incomingGradient, operand) -> incomingGradient.neg(),
                 UnaryOperator.identity());
     }
+
+    /**
+     * Adds a fixed scalar constant through a lazy unary operation.
+     *
+     * <p>For scalars or elementwise tensors, preserves context and records only this
+     * operand. The constant is untracked; derivative operations preserve higher-order
+     * dependencies. Wrapped data defines numerical boundary behaviour.
+     *
+     * @param constant the fixed scalar operand
+     * @return the lazy arithmetic result without mutating this operand
+     */
+    @Override
+    default V add(float constant) {
+        return applyUnaryOperator(data -> data.add(constant),
+                (incoming, operand) -> incoming, UnaryOperator.identity());
+    }
+
+    /**
+     * Subtracts a fixed scalar constant through a lazy unary operation.
+     *
+     * <p>For scalars or elementwise tensors, preserves context and records only this
+     * operand. The constant is untracked; derivative operations preserve higher-order
+     * dependencies. Wrapped data defines numerical boundary behaviour.
+     *
+     * @param constant the fixed scalar operand
+     * @return the lazy arithmetic result without mutating this operand
+     */
+    @Override
+    default V sub(float constant) {
+        return applyUnaryOperator(data -> data.sub(constant),
+                (incoming, operand) -> incoming, UnaryOperator.identity());
+    }
+
+    /**
+     * Multiplies by a fixed scalar constant through a lazy unary operation.
+     *
+     * <p>For scalars or elementwise tensors, preserves context and records only this
+     * operand. The constant is untracked; derivative operations preserve higher-order
+     * dependencies. Wrapped data defines numerical boundary behaviour.
+     *
+     * @param constant the fixed scalar operand
+     * @return the lazy arithmetic result without mutating this operand
+     */
+    @Override
+    default V mul(float constant) {
+        return applyUnaryOperator(data -> data.mul(constant),
+                (incoming, operand) -> incoming.mul(constant), UnaryOperator.identity());
+    }
+
+    /**
+     * Divides by a fixed scalar constant through a lazy unary operation.
+     *
+     * <p>For scalars or elementwise tensors, preserves context and records only this
+     * operand. The constant is untracked; derivative operations preserve higher-order
+     * dependencies. Wrapped data defines numerical boundary behaviour.
+     *
+     * @param constant the fixed scalar operand
+     * @return the lazy arithmetic result without mutating this operand
+     */
+    @Override
+    default V div(float constant) {
+        return applyUnaryOperator(data -> data.div(constant),
+                (incoming, operand) -> incoming.div(constant), UnaryOperator.identity());
+    }
+
+    /**
+     * Builds a lazy constant mask for elements greater than the threshold.
+     *
+     * <p>Wrapped data supplies float masks (one for true, zero for false) and boundary
+     * behaviour. Context is preserved. The result is an untracked leaf with no inputs
+     * or backward callback; gradients do not flow through this comparison.
+     *
+     * @param threshold the fixed scalar threshold
+     * @return the lazy constant mask without mutating this operand
+     */
+    @Override
+    default V gt(float threshold) {
+        return applyConstantOperator(data -> data.gt(threshold), UnaryOperator.identity());
+    }
+
+    /**
+     * Builds a lazy constant mask for elements greater than or equal to the threshold.
+     *
+     * <p>Wrapped data supplies float masks (one for true, zero for false) and boundary
+     * behaviour. Context is preserved. The result is an untracked leaf with no inputs
+     * or backward callback; gradients do not flow through this comparison.
+     *
+     * @param threshold the fixed scalar threshold
+     * @return the lazy constant mask without mutating this operand
+     */
+    @Override
+    default V gte(float threshold) {
+        return applyConstantOperator(data -> data.gte(threshold), UnaryOperator.identity());
+    }
+
+    /**
+     * Builds a lazy constant leaf from numerical data without recording graph inputs.
+     *
+     * <p>Used for scalar or tensor comparison masks. Maps context once, does not
+     * evaluate data at construction, and installs no backward callback. The result
+     * requires no gradients and starts with an absent gradient. Existing state is unchanged.
+     *
+     * @param forward the non-null numerical operation
+     * @param contextMapper the non-null context mapper
+     * @return the non-null constant leaf
+     * @throws NullPointerException if an argument is null
+     */
+    V applyConstantOperator(UnaryOperator<D> forward, UnaryOperator<C> contextMapper);
 
     /**
      * Builds a unary result and installs its local backward callback.

@@ -57,6 +57,9 @@ public final class FloatWrapperAutogradValueImpl extends AutogradValueImpl<Float
         super(data, null, requiresGrad, inputs);
     }
 
+    /** Reads wrapped numerical contents without changing gradient state. */
+    @Override public float[] dataAsFloatArray() { return data().get().dataAsFloatArray(); }
+
     /** Returns this scalar as the node's concrete owner. */
     @Override protected FloatWrapperAutogradValue self() { return this; }
 

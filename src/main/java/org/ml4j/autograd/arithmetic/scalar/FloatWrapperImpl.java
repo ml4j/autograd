@@ -61,6 +61,48 @@ public class FloatWrapperImpl implements FloatWrapper {
         return createFloatWrapper(-floatValue());
     }
 
+    /** Returns an independent one-element float array containing this scalar. */
+    @Override
+    public float[] dataAsFloatArray() {
+        return new float[]{value};
+    }
+
+    /** Returns ordinary float arithmetic with a fixed constant, including IEEE boundaries. */
+    @Override
+    public FloatWrapper add(float other) {
+        return createFloatWrapper(value + other);
+    }
+
+    /** Returns ordinary float arithmetic with a fixed constant, including IEEE boundaries. */
+    @Override
+    public FloatWrapper sub(float other) {
+        return createFloatWrapper(value - other);
+    }
+
+    /** Returns ordinary float arithmetic with a fixed constant, including IEEE boundaries. */
+    @Override
+    public FloatWrapper mul(float other) {
+        return createFloatWrapper(value * other);
+    }
+
+    /** Returns ordinary float arithmetic with a fixed constant, including IEEE boundaries. */
+    @Override
+    public FloatWrapper div(float other) {
+        return createFloatWrapper(value / other);
+    }
+
+    /** Returns a zero/one mask using Java float comparison; NaN comparisons are false. */
+    @Override
+    public FloatWrapper gt(float threshold) {
+        return createFloatWrapper(value > threshold ? 1f : 0f);
+    }
+
+    /** Returns a zero/one mask using Java float comparison; NaN comparisons are false. */
+    @Override
+    public FloatWrapper gte(float threshold) {
+        return createFloatWrapper(value >= threshold ? 1f : 0f);
+    }
+
     /**
      * Creates numerical result data without changing either operand.
      * @param value the calculated scalar

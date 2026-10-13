@@ -197,6 +197,26 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
     }
 
     /**
+     * Builds a lazy untracked leaf, for example a scalar or tensor comparison mask.
+     *
+     * <p>Context is mapped once; the result has no graph inputs or backward callback
+     * and starts with no gradient. Overrides must preserve these guarantees and
+     * leave existing operand state unchanged.
+     *
+     * @param forward the non-null numerical operation
+     * @param contextMapper the non-null output context mapper
+     * @return the new constant leaf
+     * @throws NullPointerException if an argument is null
+     */
+    public V applyConstantOperator(UnaryOperator<D> forward, UnaryOperator<C> contextMapper) {
+        Objects.requireNonNull(forward, "forward");
+        Objects.requireNonNull(contextMapper, "contextMapper");
+        C outputContext = contextMapper.apply(context());
+        return createAutogradValue(() -> forward.apply(data().get()),
+                outputContext, false, List.of());
+    }
+
+    /**
      * Maps operand metadata to the result context, such as tensor shape or null for scalars.
      * @param left left context
      * @param right right context

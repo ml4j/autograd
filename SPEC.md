@@ -811,3 +811,36 @@ duplicating numerical storage and retaining versus detaching graph connections r
 unresolved. Review existing copy-constructor callers during migration; adapt necessary
 callers within supported explicit construction or report blockers, without silently
 choosing copy semantics. No tensor constructors or callers are changed here.
+
+## Shared scalar arithmetic and comparison defaults
+
+At the user's request, move the six tensor overrides into the core
+DifferentiableArithmeticOperations interface. Scalar add/sub/mul/div use the unary
+helper with fixed constants and identity context mapping; contributions are g, g,
+g*c, and g/c. gt/gte delegate to wrapped numerical masks using a new public
+applyConstantOperator(forward, contextMapper) integration hook, supplied by the base.
+The hook maps context once, defers data, and creates an untracked leaf with empty
+inputs, absent gradient, and no backward callback. It is overridable subject to these
+requirements. Existing data, graph, and gradient state are unchanged.
+
+Tensor adapters inherit all six defaults. Wrapped numerical implementations still
+must implement the underlying operations; provisional ArithmeticOperations defaults
+remain unsupported. No raw-float or numerical FloatWrapper implementation is added
+in this increment. dataAsFloatArray delegation stays in the tensor adapter.
+This supersedes the earlier statement that all six differentiable defaults are
+unsupported and the tensor-specific construction described in migration decisions.
+
+## Agreed increment: declarations-only numerical arithmetic
+
+ArithmeticOperations contains only abstract method signatures and Javadoc; all seven
+throwing defaults are removed. Implementers must provide every declared capability.
+DifferentiableArithmeticOperations retains the six shared arithmetic/mask defaults.
+Concrete FloatWrapperImpl now supplies the previously missing numerical operations:
+scalar add/sub/mul/div use Java float arithmetic; gt/gte use Java comparisons with
+zero/one encoding (NaN comparisons false); array access returns a fresh one-element
+array. FloatWrapperAutogradValueImpl delegates array access to wrapped data.
+
+This supersedes provisional unsupported-default documentation. Raw FloatAutogradValue
+is not an ArithmeticOperations implementer and gains no new methods in this increment.
+Tensor backends already implement all numerical signatures and inherit shared
+differentiable defaults. Returned arrays remain read-only by the interface contract.

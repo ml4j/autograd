@@ -564,3 +564,24 @@ paths, without adding core copy constructors.
 
 Status: complete. Recorded scope in SPEC.md. Documentation only; no runtime/tensor
 changes or build.
+
+## Current increment: share scalar and comparison defaults
+
+Move six tensor overrides into DifferentiableArithmeticOperations, add an overridable
+constant-leaf helper for masks, and remove redundant tensor overrides. Verify lazy
+forward evaluation, seeds/higher derivatives, mask state, and both backend suites.
+Numerical scalar implementations and float-array delegation are outside this move.
+
+Status: complete. Core defaults and constant-leaf helper added; redundant tensor
+overrides removed. Core verify passed with 84 tests, artifact install passed, and
+tensor clean verify passed with 81 tests across both backends and GPT smoke tests.
+
+## Current increment: declarations-only ArithmeticOperations
+
+Remove throwing defaults and update Javadoc. Supply required concrete float numerical
+methods and wrapped array access; use production numerical operations in shared tests.
+Validate numerical boundaries and rebuild core/tensor projects.
+
+Status: complete. ArithmeticOperations has no implementations; concrete float
+operations and wrapped array access satisfy abstract signatures. Core verify passed
+with 87 tests; artifact installed; tensor clean verify passed with 81 tests.
