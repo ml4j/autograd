@@ -315,6 +315,19 @@ Status: complete. Added the migration note and checked it against legacy propert
 assignment, accumulation, callback dispatch, and unary/binary construction.
 Documentation whitespace checks passed; no code or contracts changed.
 
+## Current increment: unary negation
+
+- Document numerical negation, its differentiable default, and a public unary integration hook.
+- Introduce UnaryGradient with explicit incoming-gradient and forward-operand parameters.
+- Implement lazy unary graph construction and negation for raw and wrapped floats.
+- Test deferred evaluation, local propagation, constants, composition, repeated passes,
+  higher derivatives, and helper argument/context handling. Validate the standalone build.
+
+Status: complete. Added the documented unary contract, shared helper, and raw/wrapped
+float negation. Seven focused tests cover the new behaviour, including second derivatives.
+The standalone `./mvnw -o verify` build passed with all fifty-eight tests.
+No graph flags, dependencies, or legacy changes were introduced.
+
 ## Next increment
 
 Resolve the pending FloatWrapper accessor naming decision before changing that public signature.

@@ -17,12 +17,12 @@ validation scope, not a restriction on numerical data types.
 ## Current state
 
 The repository contains standalone build infrastructure, the documented `Value`,
-`ValueNode`, `Accumulatable`, `GradNode`, `AutogradValue`, and `BinaryGradient` interfaces,
+`ValueNode`, `Accumulatable`, `GradNode`, `AutogradValue`, `BinaryGradient`, and `UnaryGradient` interfaces,
 and the immutable scalar implementation
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
-`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition and multiplication,
+`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition, multiplication, and negation,
 local propagation, and graph-wide backward execution. Tests and the scalar demo
 validate first derivatives, retained gradient expressions, and Hessian-vector products.
 
@@ -423,5 +423,26 @@ V apply(V incomingGradient, V leftOperand, V rightOperand);
 Concrete operation rules, tensor shape/seed policies, and numerical compatibility
 validation remain to be specified as implementations are introduced. Earlier
 proof-of-concept implementations are reference material, not code to copy wholesale.
+
+## Agreed increment: unary negation
+
+- `ArithmeticOperations<V>` adds `V neg()`: a non-null arithmetic negation without
+  operand mutation. Scalar 2 becomes -2; tensors negate each element without changing shape.
+- `DifferentiableArithmeticOperations` supplies default negation through numerical
+  `D::neg`, the derivative rule `incomingGradient.neg()`, and unchanged context.
+- Public `applyUnaryOperator(UnaryOperator<D> forward, UnaryGradient<V> gradient,
+  UnaryOperator<C> contextMapper)` is an integration hook implemented by the base class.
+  It rejects null arguments, maps context once without evaluating data, constructs a
+  lazy result recording exactly one input, and preserves the operand's requiresGrad.
+- `UnaryGradient<V>` defines `V apply(V incomingGradient, V operand)`. It receives
+  the non-null incoming gradient and original forward operand, not the forward result;
+  returns a non-null compatible contribution without mutation or accumulation; and
+  retains differentiable dependencies where needed for higher derivatives.
+- The result's local callback reads its gradient and invokes the rule only for a
+  tracked operand with an incoming contribution. It accumulates without traversal;
+  existing backward coordination, reset, and graph policies apply unchanged.
+- Raw Float and wrapped Float implementations demonstrate negation. Constant derivative
+  expressions need not require gradients. Negation composed with multiplication can
+  preserve nonconstant derivative expressions for second derivatives.
 
 ## Decisions still to finalise

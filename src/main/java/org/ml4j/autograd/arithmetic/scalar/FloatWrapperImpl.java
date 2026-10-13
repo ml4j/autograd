@@ -1,7 +1,7 @@
 package org.ml4j.autograd.arithmetic.scalar;
 
 /**
- * Stores a fixed float and returns new wrappers for addition and multiplication.
+ * Stores a fixed float and returns new wrappers for addition, multiplication, and negation.
  *
  * <p>Wrappers of 2 and 3 sum to 5 or multiply to 6. This scalar data type has no
  * graph or gradient state; tensor data implementations can provide a similar API.
@@ -36,6 +36,12 @@ public class FloatWrapperImpl implements FloatWrapper {
     @Override
     public FloatWrapper mul(FloatWrapper other) {
         return createFloatWrapper(getFloat() * other.getFloat());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public FloatWrapper neg() {
+        return createFloatWrapper(-getFloat());
     }
 
     /**

@@ -2,8 +2,10 @@ package org.ml4j.autograd.arithmetic;
 
 import org.ml4j.autograd.AutogradValue;
 import org.ml4j.autograd.operators.BinaryGradient;
+import org.ml4j.autograd.operators.UnaryGradient;
 
 import java.util.function.BinaryOperator;
+import java.util.function.UnaryOperator;
 
 /**
  * Defines differentiable operations by delegating forward arithmetic to wrapped data.
@@ -14,7 +16,7 @@ import java.util.function.BinaryOperator;
  *
  * <p>The current default addition passes gradients unchanged. Tensor implementations
  * requiring broadcast reduction must adapt those contributions explicitly. This
- * interface supplies addition and ordinary product-rule multiplication by default.
+ * interface supplies addition, ordinary product-rule multiplication, and negation by default.
  * Tensor types with broadcasting or non-elementwise multiplication must override
  * the relevant defaults to provide appropriate shape and derivative rules.
  *
@@ -69,6 +71,43 @@ public interface DifferentiableArithmeticOperations<V extends AutogradValue<V, D
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(leftOperand),
                 this::mapContext);
     }
+
+    /**
+     * Builds a lazy negation with this operand recorded as its single input.
+     *
+     * <p>A scalar 2 becomes -2; a tensor negates each element and keeps its shape.
+     * Each tracked operand receives the negated incoming gradient.
+     *
+     * <p>Context and gradient requirements are preserved. Numerical data and gradient
+     * state are unchanged; the derivative uses differentiable negation so dependencies
+     * in the incoming gradient remain available for higher derivatives.
+     *
+     * @return the lazy differentiable negation
+     */
+    @Override
+    default V neg() {
+        return applyUnaryOperator(D::neg,
+                (incomingGradient, operand) -> incomingGradient.neg(),
+                UnaryOperator.identity());
+    }
+
+    /**
+     * Builds a unary result and installs its local backward callback.
+     *
+     * <p>Scalar or tensor rules receive the result's incoming gradient and original
+     * operand. The context mapper runs once; numerical evaluation remains deferred.
+     * The result records one input and preserves the operand's gradient requirement.
+     * Local propagation skips constants and absent gradients, accumulating a contribution
+     * without traversing inputs. Rules must preserve higher-derivative dependencies.
+     *
+     * @param forward the non-null numerical operation
+     * @param gradient the non-null operand contribution rule
+     * @param contextMapper the non-null output context mapper
+     * @return the differentiable unary result
+     * @throws NullPointerException if an argument is null
+     */
+    V applyUnaryOperator(UnaryOperator<D> forward, UnaryGradient<V> gradient,
+                         UnaryOperator<C> contextMapper);
 
     /**
      * Maps operand metadata to result metadata.

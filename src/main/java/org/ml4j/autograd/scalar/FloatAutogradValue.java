@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
  * subclass, numerical addition is ordinary float addition. Forward results are lazy;
- * supplied numerical data must remain stable. Addition and multiplication support
+ * supplied numerical data must remain stable. Addition, multiplication, and negation support
  * local and graph-wide propagation; the implicit scalar seed is one.
  */
 public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradValue, Float, Void> {
@@ -52,6 +52,20 @@ public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradVal
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(rightOperand),
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(leftOperand),
                 this::mapContext);
+    }
+
+    /**
+     * Returns this scalar's negation, for example 2 becomes -2.
+     *
+     * <p>Evaluation is deferred and context is unchanged, as for elementwise tensor
+     * negation. The result records one input and preserves the gradient requirement.
+     * The backward rule negates the incoming gradient without mutating either value.
+     *
+     * @return the lazy differentiable negation
+     */
+    public FloatAutogradValue neg() {
+        return applyUnaryOperator(value -> -value,
+                (incomingGradient, operand) -> incomingGradient.neg(), context -> context);
     }
 
     /**

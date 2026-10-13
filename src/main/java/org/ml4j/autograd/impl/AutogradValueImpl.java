@@ -8,6 +8,7 @@ import org.ml4j.autograd.node.ValueNode;
 import org.ml4j.autograd.node.impl.GradNodeImpl;
 import org.ml4j.autograd.node.impl.ValueNodeImpl;
 import org.ml4j.autograd.operators.BinaryGradient;
+import org.ml4j.autograd.operators.UnaryGradient;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 /**
  * Provides shared node ownership and forward-operation construction for autograd values.
@@ -136,6 +138,37 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
                     other.gradNode().accumulate(rightGradient.apply(incomingGradient, self(), other));
                 }
             });
+        });
+        return result;
+    }
+
+    /**
+     * Constructs a lazy unary result and installs its local backward callback.
+     *
+     * <p>Scalar negation or a tensor operation records this value as its single input.
+     * Context is mapped once without evaluating data. The callback extracts the
+     * result's incoming gradient and passes it with the original operand to the rule.
+     * Constants and absent gradients cause no propagation; accumulation is local.
+     *
+     * @param forward the non-null numerical operation
+     * @param gradient the non-null operand contribution rule
+     * @param contextMapper the non-null output context mapper
+     * @return the lazy concrete result, preserving the operand's gradient requirement
+     * @throws NullPointerException if an argument is null
+     */
+    public final V applyUnaryOperator(UnaryOperator<D> forward, UnaryGradient<V> gradient,
+                                      UnaryOperator<C> contextMapper) {
+        Objects.requireNonNull(forward, "forward");
+        Objects.requireNonNull(gradient, "gradient");
+        Objects.requireNonNull(contextMapper, "contextMapper");
+        C outputContext = contextMapper.apply(context());
+        V result = createAutogradValue(() -> forward.apply(data().get()),
+                outputContext, requiresGrad(), List.of(valueNode()));
+        result.valueNode().setBackwardFunction(resultValue -> {
+            if (resultValue.requiresGrad() && requiresGrad()) {
+                resultValue.gradNode().gradient().ifPresent(incomingGradient ->
+                        gradNode().accumulate(gradient.apply(incomingGradient, self())));
+            }
         });
         return result;
     }
