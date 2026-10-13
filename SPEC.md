@@ -22,7 +22,8 @@ and the immutable scalar implementation
 `FloatValue` with tests.
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
-`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition, multiplication, and negation,
+`AutogradValueImpl` and `FloatAutogradValue` provide lazy addition, subtraction,
+multiplication, and negation,
 local propagation, and graph-wide backward execution. Tests and the scalar demo
 validate first derivatives, retained gradient expressions, and Hessian-vector products.
 
@@ -444,5 +445,23 @@ proof-of-concept implementations are reference material, not code to copy wholes
 - Raw Float and wrapped Float implementations demonstrate negation. Constant derivative
   expressions need not require gradients. Negation composed with multiplication can
   preserve nonconstant derivative expressions for second derivatives.
+
+## Agreed increment: composed subtraction
+
+- `ArithmeticOperations<V>` adds `V sub(V other)`: a non-null difference for a
+  non-null compatible right operand, without changing operand data, graphs, or gradients.
+  Scalar 5 minus 3 is 2; tensors subtract compatible elements under their numerical rules.
+- `DifferentiableArithmeticOperations.sub` composes `add(other.neg())`. It constructs
+  a negation node for the right operand and an addition node for the result; it does
+  not call the wrapped data's sub method or introduce another graph helper.
+- Evaluation remains lazy. Context mapping and gradient requirements follow existing
+  negation/addition contracts. For scalars or compatible same-shape tensors, left and
+  right contributions are respectively the incoming gradient and its negation.
+  Broadcasting support depends on appropriate addition overrides.
+- Raw Float subtraction uses the same composition; wrapped numerical data provides
+  ordinary float subtraction. Constants, repeated passes, accumulation, and higher
+  derivatives follow the existing contracts. Null operands cause NullPointerException.
+- Direct single-node subtraction is deferred; tensor performance may motivate a
+  separately agreed implementation change later.
 
 ## Decisions still to finalise

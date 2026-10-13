@@ -16,7 +16,8 @@ import java.util.function.UnaryOperator;
  *
  * <p>The current default addition passes gradients unchanged. Tensor implementations
  * requiring broadcast reduction must adapt those contributions explicitly. This
- * interface supplies addition, ordinary product-rule multiplication, and negation by default.
+ * interface supplies addition, composed subtraction, ordinary product-rule multiplication,
+ * and negation by default.
  * Tensor types with broadcasting or non-elementwise multiplication must override
  * the relevant defaults to provide appropriate shape and derivative rules.
  *
@@ -46,6 +47,26 @@ public interface DifferentiableArithmeticOperations<V extends AutogradValue<V, D
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
                 this::mapContext);
+    }
+
+    /**
+     * Builds a lazy difference by adding the right operand's negation.
+     *
+     * <p>Scalar 5 minus 3 is 2. For compatible same-shape tensors, the left operand
+     * receives the incoming gradient and the right receives its negation.
+     *
+     * <p>This composes two operation nodes rather than calling numerical sub directly.
+     * Context mapping, gradient requirements, and higher-derivative dependencies follow
+     * negation and addition. Neither operand is mutated. Tensor broadcasting requires
+     * an addition implementation with the appropriate gradient reductions.
+     *
+     * @param other the non-null compatible right operand
+     * @return the lazy differentiable difference
+     * @throws NullPointerException if other is null
+     */
+    @Override
+    default V sub(V other) {
+        return add(other.neg());
     }
 
     /**

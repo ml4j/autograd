@@ -1,7 +1,7 @@
 package org.ml4j.autograd.arithmetic;
 
 /**
- * Defines non-mutating numerical addition, multiplication, and negation.
+ * Defines non-mutating numerical addition, subtraction, multiplication, and negation.
  *
  * <p>A scalar wrapper can add or multiply its stored floats. A tensor type can
  * supply corresponding operations on compatible numerical data and shapes.
@@ -20,6 +20,17 @@ public interface ArithmeticOperations<V extends ArithmeticOperations<?>> {
      * @return a non-null sum without mutating either operand
      */
     V add(V other);
+
+    /**
+     * Returns the difference, for example 5 minus 3 equals 2.
+     *
+     * <p>Tensors subtract compatible elements according to their numerical shape rules.
+     * Neither operand's data, computation graph, nor gradient state is changed.
+     *
+     * @param other a non-null compatible right operand
+     * @return a non-null difference
+     */
+    V sub(V other);
 
     /**
      * Returns the product, for example 2 times 3 equals 6 for scalars.

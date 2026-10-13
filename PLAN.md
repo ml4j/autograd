@@ -328,6 +328,17 @@ float negation. Seven focused tests cover the new behaviour, including second de
 The standalone `./mvnw -o verify` build passed with all fifty-eight tests.
 No graph flags, dependencies, or legacy changes were introduced.
 
+## Current increment: composed subtraction
+
+- Document numerical sub and differentiable subtraction composed as add(other.neg()).
+- Add wrapped numerical subtraction and the default, plus raw Float subtraction.
+- Test forward laziness, signed operand gradients, constants, shared operands,
+  repeated passes, and second derivatives. Validate the standalone build.
+
+Status: complete. Added numerical subtraction, the composed differentiable default,
+raw Float subtraction, and six focused tests. The standalone `./mvnw -o verify`
+build passed with all sixty-four tests. No legacy code or dependencies changed.
+
 ## Next increment
 
 Resolve the pending FloatWrapper accessor naming decision before changing that public signature.
