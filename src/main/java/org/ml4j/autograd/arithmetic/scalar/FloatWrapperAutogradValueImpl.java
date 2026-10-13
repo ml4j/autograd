@@ -19,14 +19,15 @@ import java.util.function.Supplier;
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
  * subclass, numerical arithmetic is delegated to FloatWrapper. Forward results are lazy;
- * supplied numerical data must remain stable. Addition and multiplication support
+ * supplied numerical data must remain stable. Shared arithmetic and ReLU rules support
  * local and graph-wide propagation; the implicit scalar seed is one.
  */
 public final class FloatWrapperAutogradValueImpl extends AutogradValueImpl<FloatWrapperAutogradValue, FloatWrapper, Void> implements FloatWrapperAutogradValue {
 
     /**
      * Creates a scalar leaf from fixed numerical data.
-     * @param value the non-null immutable scalar wrapper
+     *
+     * @param value        the non-null immutable scalar wrapper
      * @param requiresGrad whether a backward pass should calculate its gradient
      */
     public FloatWrapperAutogradValueImpl(FloatWrapper value, boolean requiresGrad) {
@@ -35,7 +36,8 @@ public final class FloatWrapperAutogradValueImpl extends AutogradValueImpl<Float
 
     /**
      * Creates a scalar leaf from fixed numerical data.
-     * @param value the scalar, including any valid primitive float value
+     *
+     * @param value        the scalar, including any valid primitive float value
      * @param requiresGrad whether a backward pass should calculate its gradient
      */
     public FloatWrapperAutogradValueImpl(float value, boolean requiresGrad) {
@@ -45,7 +47,8 @@ public final class FloatWrapperAutogradValueImpl extends AutogradValueImpl<Float
 
     /**
      * Creates a scalar leaf with deferred numerical data.
-     * @param data a supplier of stable, non-null FloatWrapper data
+     *
+     * @param data         a supplier of stable, non-null FloatWrapper data
      * @param requiresGrad whether a backward pass should calculate its gradient
      * @throws NullPointerException if the supplier is null
      */
@@ -57,24 +60,44 @@ public final class FloatWrapperAutogradValueImpl extends AutogradValueImpl<Float
         super(data, null, requiresGrad, inputs);
     }
 
-    /** Reads wrapped numerical contents without changing gradient state. */
-    @Override public float[] dataAsFloatArray() { return data().get().dataAsFloatArray(); }
+    /**
+     * Reads wrapped numerical contents without changing gradient state.
+     */
+    @Override
+    public float[] dataAsFloatArray() {
+        return data().get().dataAsFloatArray();
+    }
 
-    /** Returns this scalar as the node's concrete owner. */
-    @Override protected FloatWrapperAutogradValue self() { return this; }
+    /**
+     * Returns this scalar as the node's concrete owner.
+     */
+    @Override
+    protected FloatWrapperAutogradValue self() {
+        return this;
+    }
 
-    /** Supplies a constant scalar seed of one for implicit backward execution. */
-    @Override protected FloatWrapperAutogradValue defaultGradient() {
+    /**
+     * Supplies a constant scalar seed of one for implicit backward execution.
+     */
+    @Override
+    protected FloatWrapperAutogradValue defaultGradient() {
         return new FloatWrapperAutogradValueImpl(1f, false);
     }
 
-    /** Scalars need no context metadata. */
-    @Override public Void mapContext(Void leftContext, Void rightContext) { return null; }
+    /**
+     * Scalars need no context metadata.
+     */
+    @Override
+    public Void mapContext(Void leftContext, Void rightContext) {
+        return null;
+    }
 
-    /** Constructs the lazy scalar result with its ordered operands and combined gradient requirement. */
+    /**
+     * Constructs the lazy scalar result with its ordered operands and combined gradient requirement.
+     */
     @Override
     protected FloatWrapperAutogradValue createAutogradValue(Supplier<FloatWrapper> dataSupplier, Void context,
-            boolean requiresGrad, List<? extends ValueNode<?>> inputs) {
+                                                            boolean requiresGrad, List<? extends ValueNode<?>> inputs) {
         return new FloatWrapperAutogradValueImpl(dataSupplier, requiresGrad, inputs);
     }
 }

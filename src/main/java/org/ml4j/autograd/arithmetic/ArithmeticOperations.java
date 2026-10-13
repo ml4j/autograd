@@ -17,7 +17,7 @@ package org.ml4j.autograd.arithmetic;
  *
  * @param <V> the operand and result type
  */
-public interface ArithmeticOperations<V extends ArithmeticOperations<?>> {
+public interface ArithmeticOperations<V extends ArithmeticOperations<V>> {
     /**
      * Returns the sum, for example 2 plus 3 equals 5 for scalars.
      * @param other a non-null compatible right operand

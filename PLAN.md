@@ -585,3 +585,31 @@ Validate numerical boundaries and rebuild core/tensor projects.
 Status: complete. ArithmeticOperations has no implementations; concrete float
 operations and wrapped array access satisfy abstract signatures. Core verify passed
 with 87 tests; artifact installed; tensor clean verify passed with 81 tests.
+
+## Current increment: activation cleanup and ReLU
+
+Document numerical/differentiable activation contracts, supply shared unary ReLU
+and float numerical implementation, and tidy demo numerical output. Test boundaries,
+laziness, seeds/constants, repeated passes, higher derivatives, and demo regression.
+
+Status: complete. Documented activation contracts and generic capability bounds,
+implemented numerical/shared ReLU, and tidied demo output. Six focused tests cover
+boundaries, lazy construction, seeds/constants, shared/repeated passes, higher
+derivatives, and the micrograd regression. `./mvnw -o verify` passed with 93 tests.
+AutogradDemo ran and printed 24.704082, 138.83382, and 645.5772.
+
+## Planned increment: mathematical functions and tensor migration
+
+- [ ] Agree domains, floating-point boundaries, power special cases, precision,
+  derivative support, and final interface packages/bounds recorded in SPEC.md.
+- [ ] Introduce declarations-only MathOperations and DifferentiableMathOperations
+  contracts with scalar and tensor Javadoc examples.
+- [ ] Implement numerical float operations and shared unary differentiable defaults.
+- [ ] Test each function's forward/seeded derivative behaviour, constants, laziness,
+  repeated passes, higher derivatives, and agreed boundary/special cases.
+- [ ] Run ./mvnw verify, install the updated artifact, and coordinate tensor migration.
+- [ ] Verify downstream DJL/DL4J and GPT tests after local overrides are removed.
+
+Status: proposed, documentation only. No code or agreed runtime behaviour changed.
+Each implementation increment still requires agreement; linked tensor work is tracked
+in ../minimal-maven-project/PLAN.md.

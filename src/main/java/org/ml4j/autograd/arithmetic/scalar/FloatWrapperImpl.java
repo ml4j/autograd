@@ -104,6 +104,19 @@ public class FloatWrapperImpl implements FloatWrapper {
     }
 
     /**
+     * Returns max(0, value) using Java float arithmetic.
+     *
+     * <p>Both signed zeros produce positive zero; NaN remains NaN, positive infinity
+     * remains positive infinity, and negative infinity becomes zero.
+     *
+     * @return a new non-null numerical wrapper
+     */
+    @Override
+    public FloatWrapper relu() {
+        return createFloatWrapper(Math.max(0f, value));
+    }
+
+    /**
      * Creates numerical result data without changing either operand.
      * @param value the calculated scalar
      * @return a new wrapper of the scalar
@@ -111,4 +124,5 @@ public class FloatWrapperImpl implements FloatWrapper {
     protected FloatWrapper createFloatWrapper(float value) {
         return new FloatWrapperImpl(value);
     }
+
 }

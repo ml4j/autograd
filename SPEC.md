@@ -844,3 +844,65 @@ This supersedes provisional unsupported-default documentation. Raw FloatAutograd
 is not an ArithmeticOperations implementer and gains no new methods in this increment.
 Tensor backends already implement all numerical signatures and inherit shared
 differentiable defaults. Returned arrays remain read-only by the interface contract.
+
+## Agreed activation contracts and ReLU implementation
+
+ActivationOperations<V> is a separate non-mutating numerical capability declaring
+V relu(): max(0,x), elementwise and shape-preserving for tensors. Results are non-null.
+DifferentiableActivationOperations combines this with differentiable arithmetic;
+wrapped D must supply both numerical arithmetic and activations. Its default uses
+the existing unary helper, preserves context/requirements, and contributes
+incoming.mul(operand.gt(0f)). The mask is constant: the derivative is zero at zero,
+zero for negative inputs, and one for positive inputs. Higher derivatives use fixed
+masks while retaining incoming-gradient dependencies; no smoothness at zero is claimed.
+
+FloatWrapperImpl implements Math.max(0f,value): signed zeros yield positive zero,
+NaN is preserved, and infinities follow Java max. Comparison with NaN yields a zero
+mask; derivative arithmetic follows IEEE rules without finite-result guarantees.
+FloatWrapperAutogradValue inherits the shared activation default. The micrograd-style
+AutogradDemo prints primitive forward/gradient values. No tensor-project changes,
+additional activations, native-gradient integration, or dependencies are added.
+
+## Proposed mathematical-functions capability (not implemented)
+
+Separate exp(), log(), and pow(float exponent) from activation and basic arithmetic
+capabilities. Proposed names are MathOperations<V> and
+DifferentiableMathOperations<V, D, C>; final packages and generic bounds remain to
+be agreed. Numerical MathOperations declares signatures only:
+
+```java
+V exp();
+V log();
+V pow(float exponent);
+```
+
+Numerical implementations are non-mutating, return non-null results, and apply
+functions elementwise with preserved shape/context for tensors. Shared differentiable
+defaults use the unary graph helper, record one operand, preserve context/gradient
+requirements, and retain differentiable contributions for higher derivatives.
+The exponent is a fixed float constant, not a separately tracked operand.
+
+Proposed contribution formulas, subject to domain and boundary decisions:
+
+| Operation | Incoming-gradient contribution |
+| --- | --- |
+| exp() | incoming.mul(operand.exp()) |
+| log() | incoming.div(operand) |
+| pow(p) | incoming.mul(operand.pow(p - 1)).mul(p) |
+
+Open decisions before implementation: log at zero/negative values; power at zero,
+negative bases, fractional/non-finite exponents, and signed zero; overflow, underflow,
+NaN/infinity and exception policies across numerical backends; precision/tolerance;
+and supported derivative orders at singularities. In particular, blindly applying
+the power formula at p=0 can evaluate a singular intermediate and yield NaN rather
+than the intended zero derivative. Agree special cases (including p=0 and p=1) and
+their forward/higher-derivative semantics before choosing implementations.
+
+This is a documentation-only proposal, not approval of unresolved semantics or
+implementation of all stages. Sigmoid remains a separate activation candidate;
+softmax awaits a reduction contract, and max/sum/mean stay tensor reductions.
+
+Core responsibilities: introduce documented math capability interfaces and numerical
+float implementations, then shared differentiable defaults and focused tests. Keep
+core independent of tensor backends. Existing arithmetic/activation contracts remain
+unchanged. Coordinate artifact installation and downstream validation once ready.
