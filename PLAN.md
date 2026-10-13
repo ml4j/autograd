@@ -363,10 +363,23 @@ interface; no code, public signatures, or established semantics changed.
 ## Planned arithmetic increments
 
 - [x] Value addition, multiplication, negation, and subtraction.
-- [ ] Value division, with agreed numerical and derivative rules.
+- [x] Value division, with agreed numerical and derivative rules.
 - [ ] Scalar overloads for add, sub, mul, and div, with agreed constant construction.
 - [ ] Float-array access, with agreed name and data conversion/ownership policy.
 - [ ] Scalar-threshold gt and gte, with agreed result and differentiation policies.
 
 Suggested order only: each increment still requires agreement before implementation.
 Inline add_ and sub_ are excluded.
+
+## Current increment: value division
+
+Document and implement div(V) for raw/wrapped floats and the differentiable default.
+Use lazy elementwise quotient construction with contributions incoming/right and
+-(incoming*left)/(right*right). Float zero and non-finite cases follow IEEE arithmetic.
+Test explicit seeds, constants, shared operands, repeated passes, and higher derivatives;
+validate the standalone build. Scalar overloads remain a later increment.
+
+Status: complete. Added numerical and differentiable value division for raw/wrapped
+floats. Six tests cover lazy evaluation, seeds, constants, shared operands, repeated
+passes, higher derivatives, and IEEE boundaries. The standalone `./mvnw -o verify`
+build passed with all seventy tests. Scalar overloads remain pending; legacy unchanged.

@@ -23,7 +23,7 @@ and the immutable scalar implementation
 `ValueNodeImpl` implements the computation-node contract with focused tests.
 `GradNodeImpl` implements gradient-state storage, accumulation, and reset with focused tests.
 `AutogradValueImpl` and `FloatAutogradValue` provide lazy addition, subtraction,
-multiplication, and negation,
+multiplication, division, and negation,
 local propagation, and graph-wide backward execution. Tests and the scalar demo
 validate first derivatives, retained gradient expressions, and Hessian-vector products.
 
@@ -480,7 +480,7 @@ in-place methods `add_(V)` and `sub_(V)`. This is twelve methods in total:
 | `V sub(float other)` | Subtract a scalar constant | Pending |
 | `V mul(V other)` | Multiply by another value | Implemented |
 | `V mul(float other)` | Multiply by a scalar constant | Pending |
-| `V div(V other)` | Divide by another value | Pending |
+| `V div(V other)` | Divide by another value | Implemented |
 | `V div(float other)` | Divide by a scalar constant | Pending |
 | `V neg()` | Negate a value | Implemented |
 | `V gt(float value)` | Compare with a scalar threshold: greater than | Pending |
@@ -499,8 +499,6 @@ Before introducing the pending methods, settle the following details:
   conversion behaviour for future non-float data. Reading is not differentiation.
 - Scalar overloads: define constant-value construction and tensor shape/context
   handling without accidentally requesting gradients for the supplied scalar.
-- Division: specify scalar/elementwise semantics, zero and non-finite behaviour,
-  compatible shapes, and differentiable rules supporting higher derivatives.
 - Comparisons: define the returned value representation, tensor elementwise behaviour,
   and differentiation policy, including thresholds and non-finite inputs. Returning
   `V` in the legacy API does not by itself establish a differentiable comparison.
@@ -508,5 +506,25 @@ Before introducing the pending methods, settle the following details:
 Tensor broadcasting, numerical compatibility, and backend-specific behaviour must
 be agreed as the relevant implementations are introduced. This scope does not add
 other legacy tensor operations such as slicing or concatenation.
+
+## Agreed increment: value division
+
+- `ArithmeticOperations<V>` adds `V div(V other)`, returning a non-null quotient
+  for a non-null compatible denominator without operand mutation. Numerical types
+  define compatibility and zero/non-finite behaviour; float implementations use Java
+  IEEE floating-point division, with infinities/NaN rather than zero-division exceptions.
+- `DifferentiableArithmeticOperations.div` uses `D::div` through the existing binary
+  helper. For result left/right and incoming gradient g, contributions are g/right
+  and -(g*left)/(right*right), built with differentiable operations.
+- The default supports scalars and compatible same-shape elementwise tensors, not
+  matrix division or broadcast-gradient reduction. Such tensor types must override it.
+- Results are lazy, record ordered operands including duplicates, and combine gradient
+  requirements. Existing context mapping, accumulation, repeated-pass, and higher-
+  derivative policies apply. Null operands cause NullPointerException.
+- Float derivatives at singularities and floating-point overflow/underflow follow
+  the arithmetic of the derivative expressions; no regularisation or finite-value
+  guarantee is provided. Analytical derivative examples assume nonsingular inputs.
+- Raw Float values implement the same rules; wrapped float data provides numerical
+  division. Float overloads are not introduced in this increment.
 
 ## Decisions still to finalise

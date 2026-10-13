@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
  * subclass, numerical addition is ordinary float addition. Forward results are lazy;
- * supplied numerical data must remain stable. Addition, subtraction, multiplication, and negation support
+ * supplied numerical data must remain stable. Arithmetic operations support
  * local and graph-wide propagation; the implicit scalar seed is one.
  */
 public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradValue, Float, Void> {
@@ -67,6 +67,27 @@ public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradVal
         return applyBinaryOperator(other, (left, right) -> left * right,
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(rightOperand),
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(leftOperand),
+                this::mapContext);
+    }
+
+    /**
+     * Returns the lazy quotient, for example 6 divided by 2 is 3.
+     *
+     * <p>As with compatible elementwise tensors, contributions are incoming-gradient
+     * divided by denominator and -(incoming-gradient times numerator) divided by
+     * denominator squared. Differentiable operations preserve higher derivatives.
+     * Neither operand is mutated; inputs and gradient requirements follow binary construction.
+     * Float zero and non-finite cases follow IEEE arithmetic, including in derivative rules.
+     *
+     * @param other the non-null denominator
+     * @return the lazy differentiable quotient
+     * @throws NullPointerException if other is null
+     */
+    public FloatAutogradValue div(FloatAutogradValue other) {
+        return applyBinaryOperator(other, (left, right) -> left / right,
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient.div(rightOperand),
+                (incomingGradient, leftOperand, rightOperand) ->
+                        incomingGradient.mul(leftOperand).neg().div(rightOperand.mul(rightOperand)),
                 this::mapContext);
     }
 

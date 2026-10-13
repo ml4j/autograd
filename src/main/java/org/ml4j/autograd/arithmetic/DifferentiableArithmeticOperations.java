@@ -17,7 +17,7 @@ import java.util.function.UnaryOperator;
  * <p>The current default addition passes gradients unchanged. Tensor implementations
  * requiring broadcast reduction must adapt those contributions explicitly. This
  * interface supplies addition, composed subtraction, ordinary product-rule multiplication,
- * and negation by default.
+ * quotient-rule division, and negation by default.
  * Tensor types with broadcasting or non-elementwise multiplication must override
  * the relevant defaults to provide appropriate shape and derivative rules.
  *
@@ -90,6 +90,32 @@ public interface DifferentiableArithmeticOperations<V extends AutogradValue<V, D
         return applyBinaryOperator(other, D::mul,
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(rightOperand),
                 (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(leftOperand),
+                this::mapContext);
+    }
+
+    /**
+     * Builds a lazy quotient, for example 6 divided by 2 is 3.
+     *
+     * <p>For scalars or compatible same-shape elementwise tensors, the numerator
+     * contribution is incoming-gradient divided by the denominator. The denominator
+     * contribution is the negated incoming-gradient times numerator divided by
+     * denominator squared. These operations retain higher-derivative dependencies.
+     *
+     * <p>The result records both inputs and combines their gradient requirements;
+     * neither operand is mutated. Context follows mapContext. Numerical data defines
+     * zero/non-finite behaviour, including singular derivative expressions. Tensor
+     * broadcasting or non-elementwise division requires overriding this default.
+     *
+     * @param other the non-null compatible denominator
+     * @return the lazy differentiable quotient
+     * @throws NullPointerException if other is null
+     */
+    @Override
+    default V div(V other) {
+        return applyBinaryOperator(other, D::div,
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient.div(rightOperand),
+                (incomingGradient, leftOperand, rightOperand) ->
+                        incomingGradient.mul(leftOperand).neg().div(rightOperand.mul(rightOperand)),
                 this::mapContext);
     }
 

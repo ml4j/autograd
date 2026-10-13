@@ -44,6 +44,17 @@ public class FloatWrapperImpl implements FloatWrapper {
         return createFloatWrapper(floatValue() * other.floatValue());
     }
 
+    /**
+     * Returns ordinary float division, preserving IEEE infinities and NaN.
+     * @param other the non-null denominator
+     * @return a new numerical quotient wrapper
+     * @throws NullPointerException if other is null
+     */
+    @Override
+    public FloatWrapper div(FloatWrapper other) {
+        return createFloatWrapper(floatValue() / other.floatValue());
+    }
+
     /** {@inheritDoc} */
     @Override
     public FloatWrapper neg() {
