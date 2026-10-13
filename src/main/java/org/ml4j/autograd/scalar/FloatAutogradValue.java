@@ -23,6 +23,15 @@ import java.util.function.Supplier;
  */
 public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradValue, Float, Void> {
 
+    /** Adds primitive scalar data through the generic differentiable operation machinery. */
+    @Override
+    public FloatAutogradValue add(FloatAutogradValue other) {
+        return applyBinaryOperator(other, (leftData, rightData) -> leftData + rightData,
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
+                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
+                this::mapContext);
+    }
+
     /**
      * Returns the product of this scalar and another scalar.
      *
@@ -76,11 +85,8 @@ public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradVal
         return new FloatAutogradValue(1f, false);
     }
 
-    /** Adds scalar numerical data without changing either operand. */
-    @Override protected Float addData(Float left, Float right) { return left + right; }
-
     /** Scalars need no context metadata. */
-    @Override protected Void mapContext(Void left, Void right) { return null; }
+    @Override public Void mapContext(Void left, Void right) { return null; }
 
     /** Constructs the lazy scalar result with its ordered operands and combined gradient requirement. */
     @Override

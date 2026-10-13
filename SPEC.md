@@ -244,7 +244,7 @@ void backward();
   nodes, numerical data access, context, and gradient requirements.
 - Its value node uses a deferred `self()` reference; no subclass hook is invoked
   during base construction. Subclasses consistently return their concrete instance.
-- Generic forward addition delegates numerical addition, context mapping, and result
+- Generic binary construction delegates numerical operations, context mapping, and result
   construction to concrete hooks. Context is mapped once; data evaluation is deferred.
 - Results preserve ordered operand nodes, repeated operands, and the combined
   gradient requirement. Construction does not mutate operand graphs or gradient state.
@@ -332,8 +332,40 @@ V apply(V incomingGradient, V leftOperand, V rightOperand);
 - Existing interfaces and dependencies are unchanged. Tensor multiplication remains
   a separate numerical implementation decision, not inferred from scalar multiplication.
 
-## Decisions still to finalise
+## User-introduced arithmetic contracts and wrapper demonstration
+
+- `org.ml4j.autograd.arithmetic.ArithmeticOperations<V extends ArithmeticOperations<?>>`
+  defines `V add(V other)` and `V mul(V other)`: non-null compatible operands produce
+  non-null results without operand mutation. Numerical types define multiplication
+  semantics and compatibility. No inline operations are provided.
+- `DifferentiableArithmeticOperations<V, D, C>` extends `AutogradValue` and
+  `ArithmeticOperations`, requiring wrapped `D` to implement arithmetic and `V` to
+  support the differentiable arithmetic interface. Its default add uses `D::add` and
+  two unchanged-gradient rules. Default mul uses `D::mul` and incoming-gradient times
+  the opposite operand for each contribution.
+- `mapContext(leftContext, rightContext)` and `applyBinaryOperator(other, forward,
+  leftGradient, rightGradient, contextMapper)` are public integration hooks for interface
+  defaults. The base class provides final binary graph construction and traversal,
+  but no longer defines value-level addition. Raw Float implementations supply their own add.
+- Unchanged-gradient addition is appropriate for scalars and shape-compatible elementwise
+  tensor addition. Broadcasting reductions and non-elementwise tensor product rules need
+  explicit adaptations; these defaults do not establish those future semantics.
+- `FloatWrapper` extends arithmetic with `float getFloat()`. That user-introduced accessor
+  name is preserved in this increment; a change to accessor naming requires explicit agreement.
+- `FloatWrapperImpl` stores fixed primitive data and supplies functional numerical arithmetic.
+  `FloatWrapperAutogradValue` combines wrapper data with differentiable arithmetic and Void context.
+  Its implementation inherits arithmetic defaults and supplies result construction and the default scalar seed.
+- The wrapped demo unwraps numerical data with getFloat() and validates the same first-
+  and second-derivative examples as the raw Float demo. Wrapper tests cover numerical
+  arithmetic, default addition, multiplication, and Hessian-vector products.
+- The base class has no numerical addData hook. Raw Float implementations pass numerical
+  arithmetic directly to applyBinaryOperator; wrapped values use shared arithmetic defaults.
+- The default product rule applies to scalars and compatible elementwise tensor operations.
+  Non-elementwise products and broadcast reductions require overrides.
 
 Concrete operation rules, tensor shape/seed policies, and numerical compatibility
 validation remain to be specified as implementations are introduced. Earlier
 proof-of-concept implementations are reference material, not code to copy wholesale.
+
+## Decisions still to finalise
+

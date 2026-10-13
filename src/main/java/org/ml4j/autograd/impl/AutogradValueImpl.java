@@ -21,11 +21,12 @@ import java.util.function.Supplier;
 /**
  * Provides shared node ownership and forward-operation construction for autograd values.
  *
- * <p>A float implementation supplies numerical addition and result construction.
+ * <p>A float implementation supplies result construction and operation definitions,
+ * either directly or through differentiable arithmetic interface defaults.
  * A future tensor implementation can supply tensor arithmetic and shape mapping
  * while using the same ordered graph inputs and gradient-state handles.
  *
- * <p>Addition supplies a local backward rule. Graph-wide passes order reachable
+ * <p>Each operation supplies its local derivative rules. Graph-wide passes order reachable
  * nodes by dependency, propagate new contributions, and retain previous leaf gradients.
  * Numerical subclasses define implicit seed policies; explicit seeds work generically.
  * Supplied data and context must satisfy {@link org.ml4j.autograd.Value}'s stability
@@ -90,26 +91,6 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
     @Override public final GradNode<V> gradNode() { return gradNode; }
 
     /**
-     * Builds a lazy addition result with both operands recorded as inputs.
-     *
-     * <p>Scalar arithmetic or tensor addition is supplied by the concrete type.
-     * Forward construction leaves operand data and gradient state unchanged.
-     * Each tracked operand receives the result's incoming gradient unchanged when
-     * the result node's local backward callback is invoked.
-     *
-     * @param other the right operand
-     * @return the new forward sum
-     * @throws NullPointerException if other is null
-     */
-    @Override
-    public V add(V other) {
-        return applyBinaryOperator(other, this::addData,
-                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
-                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
-                this::mapContext);
-    }
-
-    /**
      * Constructs a lazy binary result and installs its local backward callback.
      *
      * <p>The context mapper runs once at construction; numerical evaluation is deferred.
@@ -124,7 +105,7 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      * @param contextMapper maps operand metadata to output metadata
      * @return the concrete result, requiring gradients if either operand does
      */
-    protected final V applyBinaryOperator(V other, BinaryOperator<D> forward,
+    public final V applyBinaryOperator(V other, BinaryOperator<D> forward,
                                           BinaryGradient<V> leftGradient, BinaryGradient<V> rightGradient,
                                           BinaryOperator<C> contextMapper) {
         Objects.requireNonNull(other, "other");
@@ -153,20 +134,12 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
     }
 
     /**
-     * Adds numerical data without mutating either operand.
-     * @param left left scalar or tensor data
-     * @param right right scalar or tensor data
-     * @return the numerical sum
-     */
-    protected abstract D addData(D left, D right);
-
-    /**
      * Maps operand metadata to the result context, such as tensor shape or null for scalars.
      * @param left left context
      * @param right right context
      * @return compatible output context
      */
-    protected abstract C mapContext(C left, C right);
+    public abstract C mapContext(C left, C right);
 
     /**
      * Constructs the concrete operation result, preserving the supplied metadata and inputs.

@@ -258,7 +258,37 @@ Status: complete. This supersedes the mutation prototype and its proposed safegu
 The standalone `./mvnw -o clean verify` build passed with all forty-six remaining
 tests, and the first-/second-derivative demo matched its expected output.
 
+## Completed increment: arithmetic wrapper review and cleanup
+
+Review and tidy the user-introduced arithmetic interfaces and float-wrapper implementations.
+
+- Correct copied Javadoc/examples and clarify numerical versus differentiable operations.
+- Preserve introduced public signatures while documenting their current responsibilities.
+- Fix missing numerical multiplication, incorrect multiplication dispatch, and missing addition
+  on the original float implementation/test fixtures after moving addition out of the base.
+- Add wrapper arithmetic/gradient tests and validate both demos and the standalone build.
+- Record the introduced structure in SPEC.md. Leave legacy code and inline-operation policy unchanged.
+
+Status: complete. Documented the user-introduced interfaces and wrappers, corrected
+numerical multiplication/dispatch and primitive-float addition, and added four wrapper tests.
+The standalone `./mvnw -o verify` build passed with all fifty tests. Both scalar demos
+produced the expected first derivatives and Hessian-vector product. Core contracts are unchanged.
+
+## Completed increment: shared arithmetic defaults
+
+Move wrapped multiplication into the differentiable arithmetic defaults and remove
+the redundant protected addData hook from the base class.
+
+- Preserve numerical semantics, raw Float operations, and graph/gradient behaviour.
+- Update subclasses and fixtures to provide numerical addition directly when needed.
+- Ask explicitly before renaming the public FloatWrapper accessor; preserve it until agreed.
+- Update the specification and tests and validate the standalone build and demos.
+
+Status: arithmetic refactoring complete. The standalone `./mvnw -o verify` build passed
+with all fifty-one tests, and the wrapped demo matched expected outputs. Multiplication
+now uses the interface default; addData was removed. Accessor naming remains awaiting
+explicit agreement, so getFloat() is unchanged.
+
 ## Next increment
 
-Review arithmetic wrapping/default operations using stable numerical values before
-introducing further abstractions when requested. Inline-operation safeguards are no longer planned.
+Resolve the pending FloatWrapper accessor naming decision before changing that public signature.

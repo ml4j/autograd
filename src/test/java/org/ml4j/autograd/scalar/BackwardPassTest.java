@@ -84,9 +84,12 @@ class BackwardPassTest {
     // A test-only numerical type uses the base constructor to exercise malformed graph rejection.
     private static final class GraphFixture extends AutogradValueImpl<GraphFixture, Float, Void> {
         GraphFixture(List<? extends ValueNode<?>> inputs) { super(() -> 2f, null, true, inputs); }
+        @Override public GraphFixture add(GraphFixture other) {
+            return applyBinaryOperator(other, (leftData, rightData) -> leftData + rightData,
+                    (incoming, left, right) -> incoming, (incoming, left, right) -> incoming, this::mapContext);
+        }
         @Override protected GraphFixture self() { return this; }
-        @Override protected Float addData(Float left, Float right) { return left + right; }
-        @Override protected Void mapContext(Void left, Void right) { return null; }
+        @Override public Void mapContext(Void left, Void right) { return null; }
         @Override protected GraphFixture createAutogradValue(Supplier<Float> data, Void context,
                 boolean requiresGrad, List<? extends ValueNode<?>> inputs) {
             throw new UnsupportedOperationException("No operations required by graph validation tests");

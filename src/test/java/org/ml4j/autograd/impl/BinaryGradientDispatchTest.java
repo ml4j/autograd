@@ -17,11 +17,14 @@ class BinaryGradientDispatchTest {
             super(data, null, requiresGrad, inputs);
         }
         TestValue operation(TestValue other, BinaryGradient<TestValue> left, BinaryGradient<TestValue> right) {
-            return applyBinaryOperator(other, this::addData, left, right, this::mapContext);
+            return applyBinaryOperator(other, (leftData, rightData) -> leftData + rightData, left, right, this::mapContext);
+        }
+        @Override public TestValue add(TestValue other) {
+            return applyBinaryOperator(other, (leftData, rightData) -> leftData + rightData,
+                    (incoming, left, right) -> incoming, (incoming, left, right) -> incoming, this::mapContext);
         }
         @Override protected TestValue self() { return this; }
-        @Override protected Float addData(Float left, Float right) { return left + right; }
-        @Override protected Void mapContext(Void left, Void right) { return null; }
+        @Override public Void mapContext(Void left, Void right) { return null; }
         @Override protected TestValue createAutogradValue(Supplier<Float> data, Void context,
                 boolean requiresGrad, List<? extends ValueNode<?>> inputs) {
             return new TestValue(data, requiresGrad, inputs);
