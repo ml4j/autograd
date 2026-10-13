@@ -210,7 +210,55 @@ The standalone `./mvnw -o verify` build passed with all forty-six tests. The dem
 prints first derivatives `(1.6, 1.7)` and Hessian-vector product `(5, 4)`.
 Existing interface contracts and dependencies remain unchanged.
 
+## Completed increment: unrecorded scalar in-place addition
+
+Historical increment, now reverted by the stable-data decision below. Its mutation
+contract and implementation are no longer active.
+
+Introduce unrecorded, shape-preserving scalar `add_()` as the first mutation increment.
+
+- Revise `Value` stability to apply between explicit mutations, preserving functional addition.
+- Keep `FloatValue` immutable. Mutable autograd reads expose current contents; its retained supplier is live.
+- Add numerical-update machinery to the base class and `FloatAutogradValue.add_()` returning the receiver.
+- Preserve context, graph nodes, gradient state, and requirements; self-add uses pre-update contents.
+- Document that dependent computations and retained gradient expressions cannot be reused after mutation.
+- Test identity, data updates, self-addition, unchanged gradients, and between-pass usage.
+- Run the standalone build. Automatic stale-graph detection remains a separate increment.
+
+Status: complete. Contract revision explicitly agreed by the user. Added scalar
+`add_()`, generic numerical-update machinery, and six tests. The standalone
+`./mvnw -o verify` build passed with all fifty-two tests. `FloatValue` and functional
+addition remain unchanged; automatic invalidation checks are not implemented.
+
+## Completed increment: mutation consequences demo
+
+Historical increment, now reverted along with inline operations. The demo was removed.
+
+Add a small scalar mutation demo showing preserved handles, unrecorded updates,
+retained lazy dependencies, and the supported between-pass lifecycle.
+
+- Label stale-computation reuse as unsupported and illustrative of missing invalidation checks.
+- Include expected-output comments and leave implementation/interface contracts unchanged.
+- Validate the standalone build and run the new demo.
+
+Status: complete. The standalone `./mvnw -o verify` build passed with all fifty-two
+tests. The demo ran and matched every expected-output comment. No implementation
+behaviour or interface contracts changed.
+
+## Completed increment: remove inline operations
+
+Remove inline numerical operations and restore lifetime-stable value data, as explicitly agreed.
+
+- Remove scalar `add_()`, the base numerical-update helper, and their tests/demo.
+- Restore `Value` Javadoc and SPEC.md to stable numerical contents and context.
+- Keep functional operations, gradient accumulation/reset, and legacy projects unchanged.
+- Validate a clean standalone build and the remaining scalar demo.
+
+Status: complete. This supersedes the mutation prototype and its proposed safeguards.
+The standalone `./mvnw -o clean verify` build passed with all forty-six remaining
+tests, and the first-/second-derivative demo matched its expected output.
+
 ## Next increment
 
-Review functional parity with the `autograd2` proof of concept and the current
-contracts before selecting further numerical operations or implementation refactoring.
+Review arithmetic wrapping/default operations using stable numerical values before
+introducing further abstractions when requested. Inline-operation safeguards are no longer planned.

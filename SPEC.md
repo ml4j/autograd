@@ -76,6 +76,9 @@ C context();
 - `context()` does not evaluate numerical data. It may return null only when no
   additional metadata is needed; `Void` is the intended context type for such values.
 - The contract provides no mutation, cache invalidation, gradient, graph, or naming operations.
+- Numerical in-place operations are not supported on autograd values. Gradient accumulation
+  and reset remain supported mutations of bookkeeping, without changing numerical contents.
+  Direct backing-storage changes and changing external data suppliers are unsupported.
 
 ## Implementation: `org.ml4j.autograd.scalar.FloatValue`
 
