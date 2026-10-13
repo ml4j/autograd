@@ -408,12 +408,13 @@ V apply(V incomingGradient, V leftOperand, V rightOperand);
 - Unchanged-gradient addition is appropriate for scalars and shape-compatible elementwise
   tensor addition. Broadcasting reductions and non-elementwise tensor product rules need
   explicit adaptations; these defaults do not establish those future semantics.
-- `FloatWrapper` extends arithmetic with `float getFloat()`. That user-introduced accessor
-  name is preserved in this increment; a change to accessor naming requires explicit agreement.
+- `FloatWrapper` extends arithmetic with `float floatValue()`, following the agreed
+  accessor convention. The user explicitly agreed to rename the previous getFloat()
+  signature; numerical behaviour is unchanged and no compatibility alias is provided.
 - `FloatWrapperImpl` stores fixed primitive data and supplies functional numerical arithmetic.
   `FloatWrapperAutogradValue` combines wrapper data with differentiable arithmetic and Void context.
   Its implementation inherits arithmetic defaults and supplies result construction and the default scalar seed.
-- The wrapped demo unwraps numerical data with getFloat() and validates the same first-
+- The wrapped demo unwraps numerical data with floatValue() and validates the same first-
   and second-derivative examples as the raw Float demo. Wrapper tests cover numerical
   arithmetic, default addition, multiplication, and Hessian-vector products.
 - The base class has no numerical addData hook. Raw Float implementations pass numerical

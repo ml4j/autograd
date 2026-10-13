@@ -286,8 +286,8 @@ the redundant protected addData hook from the base class.
 
 Status: arithmetic refactoring complete. The standalone `./mvnw -o verify` build passed
 with all fifty-one tests, and the wrapped demo matched expected outputs. Multiplication
-now uses the interface default; addData was removed. Accessor naming remains awaiting
-explicit agreement, so getFloat() is unchanged.
+now uses the interface default; addData was removed. Accessor naming was awaiting
+explicit agreement at this stage; the later float-wrapper accessor increment resolves it.
 
 ## Current increment: document backward graph policy
 
@@ -339,6 +339,12 @@ Status: complete. Added numerical subtraction, the composed differentiable defau
 raw Float subtraction, and six focused tests. The standalone `./mvnw -o verify`
 build passed with all sixty-four tests. No legacy code or dependencies changed.
 
-## Next increment
+## Current increment: float-wrapper accessor naming
 
-Resolve the pending FloatWrapper accessor naming decision before changing that public signature.
+Rename FloatWrapper.getFloat() to floatValue() following explicit user agreement.
+Update implementations, callers, tests, examples, and the active SPEC contract.
+Preserve historical decisions as history; validate the standalone build and wrapper demo.
+
+Status: complete. Renamed the interface, implementation, all callers and examples,
+and updated SPEC.md. The standalone `./mvnw -o verify` build passed with all
+sixty-four tests; the wrapper demo matched its expected outputs. No legacy changes.

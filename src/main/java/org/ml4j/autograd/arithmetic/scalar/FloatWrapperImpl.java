@@ -21,7 +21,7 @@ public class FloatWrapperImpl implements FloatWrapper {
 
     /** {@inheritDoc} */
     @Override
-    public float getFloat() {
+    public float floatValue() {
         return value;
     }
 
@@ -29,25 +29,25 @@ public class FloatWrapperImpl implements FloatWrapper {
     @Override
     public FloatWrapper add(FloatWrapper other) {
         return createFloatWrapper(
-                this.getFloat() + other.getFloat());
+                this.floatValue() + other.floatValue());
     }
 
     /** {@inheritDoc} */
     @Override
     public FloatWrapper sub(FloatWrapper other) {
-        return createFloatWrapper(getFloat() - other.getFloat());
+        return createFloatWrapper(floatValue() - other.floatValue());
     }
 
     /** {@inheritDoc} */
     @Override
     public FloatWrapper mul(FloatWrapper other) {
-        return createFloatWrapper(getFloat() * other.getFloat());
+        return createFloatWrapper(floatValue() * other.floatValue());
     }
 
     /** {@inheritDoc} */
     @Override
     public FloatWrapper neg() {
-        return createFloatWrapper(-getFloat());
+        return createFloatWrapper(-floatValue());
     }
 
     /**

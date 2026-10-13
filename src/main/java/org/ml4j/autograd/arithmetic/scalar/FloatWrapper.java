@@ -13,5 +13,5 @@ public interface FloatWrapper extends ArithmeticOperations<FloatWrapper> {
      * Returns the numerical scalar, for example 2.0 for a wrapper constructed from 2f.
      * @return the stored primitive float
      */
-    float getFloat();
+    float floatValue();
 }

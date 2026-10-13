@@ -32,10 +32,10 @@ class SubtractionTest {
         var negation = result.valueNode().inputs().get(1);
         assertEquals(1, negation.inputs().size());
         assertSame(right.valueNode(), negation.inputs().getFirst());
-        assertEquals(2f, result.data().get().getFloat());
+        assertEquals(2f, result.data().get().floatValue());
         result.backward(new FloatWrapperAutogradValueImpl(4f, false));
-        assertEquals(4f, left.gradNode().gradient().orElseThrow().data().get().getFloat());
-        assertEquals(-4f, right.gradNode().gradient().orElseThrow().data().get().getFloat());
+        assertEquals(4f, left.gradNode().gradient().orElseThrow().data().get().floatValue());
+        assertEquals(-4f, right.gradNode().gradient().orElseThrow().data().get().floatValue());
     }
 
     @Test void selfSubtractionCancelsAndRepeatedPassesRefreshIntermediates() {
@@ -63,14 +63,14 @@ class SubtractionTest {
         assertTrue(result.requiresGrad());
         result.backward();
         assertTrue(constant.gradNode().gradient().isEmpty());
-        assertEquals(-1f, tracked.gradNode().gradient().orElseThrow().data().get().getFloat());
+        assertEquals(-1f, tracked.gradNode().gradient().orElseThrow().data().get().floatValue());
         tracked.gradNode().reset();
         tracked.sub(constant).backward();
         assertTrue(constant.gradNode().gradient().isEmpty());
-        assertEquals(1f, tracked.gradNode().gradient().orElseThrow().data().get().getFloat());
+        assertEquals(1f, tracked.gradNode().gradient().orElseThrow().data().get().floatValue());
         var constantResult = constant.sub(new FloatWrapperAutogradValueImpl(2f, false));
         assertFalse(constantResult.requiresGrad());
-        assertEquals(3f, constantResult.data().get().getFloat());
+        assertEquals(3f, constantResult.data().get().floatValue());
     }
 
     @Test void compositionWithMultiplicationPreservesSecondDerivatives() {
@@ -85,18 +85,18 @@ class SubtractionTest {
         var wrapped = new FloatWrapperAutogradValueImpl(3f, true);
         wrapped.sub(wrapped.mul(wrapped)).backward(); // x-x²: first -5, second -2.
         var wrappedFirst = wrapped.gradNode().gradient().orElseThrow();
-        assertEquals(-5f, wrappedFirst.data().get().getFloat());
+        assertEquals(-5f, wrappedFirst.data().get().floatValue());
         wrapped.gradNode().reset();
         wrappedFirst.backward();
-        assertEquals(-2f, wrapped.gradNode().gradient().orElseThrow().data().get().getFloat());
+        assertEquals(-2f, wrapped.gradNode().gradient().orElseThrow().data().get().floatValue());
     }
 
     @Test void numericalSubtractionAndNullOperandsFollowTheContract() {
         var left = new FloatWrapperImpl(5f);
         var right = new FloatWrapperImpl(3f);
-        assertEquals(2f, left.sub(right).getFloat());
-        assertEquals(5f, left.getFloat());
-        assertEquals(3f, right.getFloat());
+        assertEquals(2f, left.sub(right).floatValue());
+        assertEquals(5f, left.floatValue());
+        assertEquals(3f, right.floatValue());
         assertThrows(NullPointerException.class, () -> left.sub(null));
         var raw = new FloatAutogradValue(5f, true);
         var wrapped = new FloatWrapperAutogradValueImpl(5f, true);

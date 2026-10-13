@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  * var second = new FloatWrapperAutogradValueImpl(3f, false);
  * var sum = first.add(second);
  * FloatWrapper data = sum.data().get();
- * float scalar = data.getFloat(); // 5.0
+ * float scalar = data.floatValue(); // 5.0
  * }</pre>
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor

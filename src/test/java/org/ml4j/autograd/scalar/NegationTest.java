@@ -55,17 +55,17 @@ class NegationTest {
 
     @Test void wrappedDefaultSupportsNumericalNegationAndSecondDerivatives() {
         var data = new FloatWrapperImpl(3f);
-        assertEquals(-3f, data.neg().getFloat());
-        assertEquals(3f, data.getFloat());
+        assertEquals(-3f, data.neg().floatValue());
+        assertEquals(3f, data.floatValue());
         var x = new FloatWrapperAutogradValueImpl(data, true);
         var result = x.neg().mul(x); // (-x)*x exercises unary propagation inside a product.
-        assertEquals(-9f, result.data().get().getFloat());
+        assertEquals(-9f, result.data().get().floatValue());
         result.backward();
         var first = x.gradNode().gradient().orElseThrow();
-        assertEquals(-6f, first.data().get().getFloat());
+        assertEquals(-6f, first.data().get().floatValue());
         x.gradNode().reset();
         first.backward();
-        assertEquals(-2f, x.gradNode().gradient().orElseThrow().data().get().getFloat());
+        assertEquals(-2f, x.gradNode().gradient().orElseThrow().data().get().floatValue());
     }
 
     @Test void constantNegationReceivesNoLocalContribution() {
@@ -79,7 +79,7 @@ class NegationTest {
         var wrapped = new FloatWrapperAutogradValueImpl(2f, false);
         var wrappedResult = wrapped.neg();
         assertFalse(wrappedResult.requiresGrad());
-        assertEquals(-2f, wrappedResult.data().get().getFloat());
+        assertEquals(-2f, wrappedResult.data().get().floatValue());
         wrappedResult.gradNode().accumulate(new FloatWrapperAutogradValueImpl(1f, false));
         wrappedResult.valueNode().backward();
         assertTrue(wrapped.gradNode().gradient().isEmpty());
