@@ -32,6 +32,13 @@ import java.util.function.Supplier;
  * Supplied data and context must satisfy {@link org.ml4j.autograd.Value}'s stability
  * contract. The base class adds no caching and is intended for sequential use.
  *
+ * <p>Backward uses the supplied differentiable rules without detaching their results,
+ * following {@link AutogradValue}'s current {@code createGraph}-like policy. It does
+ * not release graph inputs, callbacks, or numerical suppliers after a pass, so graphs
+ * remain reusable while reachable. Neither derivative recording nor graph retention
+ * has a configuration flag. First-order training, tensor memory pressure, saved-buffer
+ * release, or limited derivative support may motivate a future contract discussion.
+ *
  * @param <V> the concrete autograd value type
  * @param <D> the numerical data type
  * @param <C> the context type, such as shape or Void

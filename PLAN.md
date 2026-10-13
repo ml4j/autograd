@@ -289,6 +289,21 @@ with all fifty-one tests, and the wrapped demo matched expected outputs. Multipl
 now uses the interface default; addData was removed. Accessor naming remains awaiting
 explicit agreement, so getFloat() is unchanged.
 
+## Current increment: document backward graph policy
+
+Clarify the existing backward behaviour without introducing configuration flags.
+
+- Explain derivative recording (`createGraph`) and graph retention (`keepGraph` or
+  `retainGraph`) in SPEC.md and the autograd interface/base-class Javadoc.
+- Document higher derivatives, repeated passes, and gradient reset separately.
+- Record future discussion triggers: tensor memory pressure, first-order training,
+  explicit saved-state release, and operations with limited derivative support.
+- Review documentation against the implementation; no runtime changes or new tests.
+
+Status: complete. SPEC.md and interface/base-class Javadoc describe the current
+policies and future discussion triggers. Reviewed against backward traversal and
+gradient reset; documentation whitespace checks passed. No runtime changes were made.
+
 ## Next increment
 
 Resolve the pending FloatWrapper accessor naming decision before changing that public signature.

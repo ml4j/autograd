@@ -10,6 +10,19 @@ import org.ml4j.autograd.node.ValueNode;
  * its inputs. Its gradient node holds contributions produced by differentiation.
  * A gradient can itself be an autograd value with its own computation graph,
  * allowing gradient expressions to be differentiated for higher derivatives.
+ * For example, the gradient of a scalar cube can be differentiated again; tensor
+ * operation rules can support Hessian-vector products in the same way.
+ *
+ * <p>Backward currently records differentiable gradient computations (broadly
+ * equivalent to {@code createGraph = true}) and preserves the original graph for
+ * reuse (the purpose of {@code keepGraph}, also called {@code retainGraph}). There
+ * are no configuration flags for either policy. Constant derivatives need not
+ * require gradients; higher-derivative support depends on the operation rules.
+ *
+ * <p>These policies may be revisited for first-order training without derivative
+ * graphs, tensor memory pressure, explicit release of saved backward buffers, or
+ * operations with limited higher-derivative support. Such configuration requires
+ * a separately agreed contract; it is not provided by this interface today.
  *
  * <p>This value coordinates graph-wide backward passes. Value nodes execute local
  * rules; gradient nodes store contributions. Addition follows the non-mutating
@@ -75,6 +88,15 @@ public interface AutogradValue<V extends AutogradValue<V, D, C>, D, C>
      * constant derivative expressions need not require gradients themselves. Gradient
      * value identity is not guaranteed, while gradient-node identity remains stable.
      * Existing gradient values and their graphs are not mutated by replacement.
+     * This records derivative computations as with {@code createGraph = true};
+     * no detached-gradient mode is provided.
+     *
+     * <p>The original graph remains available for another pass: backward does not
+     * release its inputs, callbacks, or numerical suppliers. This serves the purpose
+     * of {@code keepGraph}/{@code retainGraph}, independently of derivative recording.
+     * Resetting a gradient node clears its held reference, not forward graph state
+     * or previously returned expressions. Unreachable objects can still be garbage
+     * collected. These policies do not change lazy forward evaluation.
      *
      * <p>Execution is sequential; concurrent passes over shared values are unsupported.
      * Callback failures may leave partially updated gradient state; no rollback is
@@ -92,7 +114,7 @@ public interface AutogradValue<V extends AutogradValue<V, D, C>, D, C>
      * <p>A float scalar uses one. Tensor types must define their own implicit seed
      * policy, or require callers to use the explicit-seed overload.
      *
-     * <p>The traversal, accumulation, and failure rules are the same as for
+     * <p>The derivative-recording, graph-retention, traversal, accumulation, and failure rules are the same as for
      * {@link #backward(AutogradValue)}.
      *
      * @throws UnsupportedOperationException if this type does not define an implicit seed

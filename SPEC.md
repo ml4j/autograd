@@ -212,6 +212,45 @@ void backward();
 - Inherited addition follows the existing `Accumulatable` contract; inherited data
   access and context stability follow the existing `Value` contract.
 
+## Current backward policy: derivative recording and graph retention
+
+Backward produces differentiable gradient expressions and keeps computation graphs
+available for reuse. For example, differentiating `x*x*x` produces an expression for
+`3*x*x` that can be differentiated again. Tensor applications can use this behaviour
+for Hessian-vector products, provided their operation rules support higher derivatives.
+
+- `createGraph` means recording derivative computations so their results retain
+  differentiable connections to the original operands. The current policy is broadly
+  equivalent to `createGraph = true`; there is no flag or detached-gradient mode.
+  Constant derivatives need not require gradients, and each numerical operation must
+  supply suitable differentiable rules for the derivative orders it supports.
+- `keepGraph` (also called `retainGraph`) means preserving the original graph's
+  saved backward state for another pass. The current implementation does not release
+  inputs, callbacks, or numerical suppliers after backward, so the graph remains reusable
+  while reachable. There is no retention flag or explicit saved-state release policy;
+  unreachable objects remain eligible for normal Java garbage collection.
+- These are separate concepts: retaining the original graph alone does not make
+  computed gradients differentiable. Recording derivatives can also retain references
+  to original operands and their graphs, increasing memory use.
+- Repeated passes follow the existing accumulation contract: leaf gradients accumulate
+  and intermediate gradients are replaced. `gradNode().reset()` clears the stored
+  gradient reference; it does not detach previously returned expressions or release
+  forward graph state. Neither concept changes the lazy forward-evaluation policy.
+
+Potential future configuration is deferred, not agreed or implemented. Revisit it when:
+
+- First-order training needs numerical gradients without building derivative graphs.
+- Larger tensor workloads or long-lived gradient expressions reveal memory pressure
+  from retained dependencies, callbacks, suppliers, or future saved tensors.
+- Operations introduce saved backward buffers that need an explicit release lifecycle,
+  requiring a decision about repeated backward passes after release.
+- A new numerical backend or operation supports only first derivatives, requiring
+  explicit capability documentation and a policy for unsupported higher derivatives.
+
+Before adding flags, agree their defaults, detachment semantics, release behaviour,
+and failure rules. Update interface contracts, Javadoc, and tests together, including
+first derivatives, higher derivatives, repeated passes, and reset behaviour.
+
 ## Implementation: `org.ml4j.autograd.node.impl.ValueNodeImpl<V>`
 
 - A final implementation accepting a deferred represented-value supplier and an input list.
@@ -368,4 +407,3 @@ validation remain to be specified as implementations are introduced. Earlier
 proof-of-concept implementations are reference material, not code to copy wholesale.
 
 ## Decisions still to finalise
-
