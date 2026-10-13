@@ -304,6 +304,17 @@ Status: complete. SPEC.md and interface/base-class Javadoc describe the current
 policies and future discussion triggers. Reviewed against backward traversal and
 gradient reset; documentation whitespace checks passed. No runtime changes were made.
 
+## Current increment: legacy graph-flag migration note
+
+Document the differing roles of legacy `BackwardConfig.keep_graph` and
+`AutogradValueProperties.create_graph` in SPEC.md, including their uneven propagation
+and why no equivalent persistent property is carried into the new contract.
+Review against legacy source; documentation only.
+
+Status: complete. Added the migration note and checked it against legacy property
+assignment, accumulation, callback dispatch, and unary/binary construction.
+Documentation whitespace checks passed; no code or contracts changed.
+
 ## Next increment
 
 Resolve the pending FloatWrapper accessor naming decision before changing that public signature.

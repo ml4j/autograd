@@ -251,6 +251,24 @@ Before adding flags, agree their defaults, detachment semantics, release behavio
 and failure rules. Update interface contracts, Javadoc, and tests together, including
 first derivatives, higher derivatives, repeated passes, and reset behaviour.
 
+### Legacy migration note: `keep_graph` and `create_graph`
+
+This note describes the reference implementation, not the new library's contract.
+
+- Legacy `BackwardConfig.keep_graph` selects whether derivative rules use original
+  operands or detached values, controlling differentiable connections for higher derivatives.
+- Legacy `AutogradValueProperties.create_graph` is persistent per-value state.
+  Backward sets it on the root from `config.keep_graph()`. `addToGrad()` checks
+  `requires_grad || create_graph` when deciding whether to accumulate a contribution.
+  The property itself does not select the derivative-rule branch.
+- Value-conversion constructors copy the property and unary operation results inherit
+  it; binary operation results do not explicitly inherit it. It therefore must not
+  be interpreted as an independent, consistently propagated derivative-recording flag.
+- The new library deliberately has no equivalent persistent property. Its current
+  derivative rules retain differentiable dependencies as described above. Any future
+  configuration requires a separately agreed backward-pass contract, rather than
+  copying the legacy mixture of pass configuration and persistent value state.
+
 ## Implementation: `org.ml4j.autograd.node.impl.ValueNodeImpl<V>`
 
 - A final implementation accepting a deferred represented-value supplier and an input list.
