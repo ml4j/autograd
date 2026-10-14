@@ -598,21 +598,27 @@ boundaries, lazy construction, seeds/constants, shared/repeated passes, higher
 derivatives, and the micrograd regression. `./mvnw -o verify` passed with 93 tests.
 AutogradDemo ran and printed 24.704082, 138.83382, and 645.5772.
 
-## Planned increment: mathematical functions and tensor migration
+## Completed increment: mathematical functions and tensor migration
 
-- [ ] Agree domains, floating-point boundaries, power special cases, precision,
-  derivative support, and final interface packages/bounds recorded in SPEC.md.
-- [ ] Introduce declarations-only MathOperations and DifferentiableMathOperations
-  contracts with scalar and tensor Javadoc examples.
-- [ ] Implement numerical float operations and shared unary differentiable defaults.
-- [ ] Test each function's forward/seeded derivative behaviour, constants, laziness,
-  repeated passes, higher derivatives, and agreed boundary/special cases.
-- [ ] Run ./mvnw verify, install the updated artifact, and coordinate tensor migration.
-- [ ] Verify downstream DJL/DL4J and GPT tests after local overrides are removed.
+- [x] Introduce org.ml4j.autograd.math.MathOperations and DifferentiableMathOperations.
+- [x] Document a behavior-preserving migration: existing derivative formulas and
+  backend domains remain; no zero/one power special cases or common boundary policy.
+- [x] Supply numerical float exp/log/pow and shared lazy differentiable defaults.
+- [x] Adopt capabilities in scalar and tensor types; remove tensor-local declarations
+  and derivative overrides while retaining DJL/DL4J numerical implementations.
+- [x] Test boundaries, laziness, graph state, constants, seeded/shared/repeated passes,
+  and second derivatives in core; test tensor shape, caching, operand preservation,
+  seeded/repeated/second derivatives, including pow(-0.5), on both backends.
+- [x] Verify core, install artifact, and validate both tensor backends and GPT.
 
-Status: proposed, documentation only. No code or agreed runtime behaviour changed.
-Each implementation increment still requires agreement; linked tensor work is tracked
-in ../minimal-maven-project/PLAN.md.
+Verification: core `./mvnw -o -B clean verify` passed with 102 tests; artifact
+installation used `./mvnw -o -B -DskipTests install`. Tensor
+`./mvnw -o -B clean verify` passed with 85 tests, including deterministic GPT
+training/inference on both backends (native-cache access enabled).
+
+Power boundary improvements and uniform backend domain semantics remain separate
+open decisions. The general rule may yield NaN at zero for pow(0) and at higher
+polynomial derivative orders. Softmax/reductions remain in the tensor project.
 
 
 ## Completed increment: shared sigmoid

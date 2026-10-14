@@ -131,6 +131,24 @@ public class FloatWrapperImpl implements FloatWrapper {
                 ? 1d / (1d + exponential) : exponential / (1d + exponential)));
     }
 
+    /** Returns Java Math.exp rounded to float, including overflow and underflow. */
+    @Override
+    public FloatWrapper exp() {
+        return createFloatWrapper((float) Math.exp(value));
+    }
+
+    /** Returns Java Math.log rounded to float, including NaN and infinity at domain boundaries. */
+    @Override
+    public FloatWrapper log() {
+        return createFloatWrapper((float) Math.log(value));
+    }
+
+    /** Returns Java Math.pow rounded to float, preserving its domain and signed-zero rules. */
+    @Override
+    public FloatWrapper pow(float exponent) {
+        return createFloatWrapper((float) Math.pow(value, exponent));
+    }
+
     /**
      * Creates numerical result data without changing either operand.
      * @param value the calculated scalar

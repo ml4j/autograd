@@ -863,49 +863,35 @@ FloatWrapperAutogradValue inherits the shared activation default. The micrograd-
 AutogradDemo prints primitive forward/gradient values. No tensor-project changes,
 additional activations, native-gradient integration, or dependencies are added.
 
-## Proposed mathematical-functions capability (not implemented)
+## Shared mathematical-functions capability
 
-Separate exp(), log(), and pow(float exponent) from activation and basic arithmetic
-capabilities. Proposed names are MathOperations<V> and
-DifferentiableMathOperations<V, D, C>; final packages and generic bounds remain to
-be agreed. Numerical MathOperations declares signatures only:
+The requested migration introduces org.ml4j.autograd.math.MathOperations<V> and
+DifferentiableMathOperations<V, D, C>. Numerical declarations are exp(), log(),
+and pow(float exponent), with non-null non-mutating results and elementwise,
+shape-preserving tensor semantics. D supplies arithmetic and math; V supplies
+differentiable arithmetic and math. Activation capabilities are independent.
 
-```java
-V exp();
-V log();
-V pow(float exponent);
-```
+Defaults preserve the existing tensor rules exactly: exp contributes g*x.exp(),
+log contributes g/x, and pow(p) contributes g*x.pow(p-1)*p. They use one lazy unary
+input, identity context mapping, and inherited requiresGrad. Exponents are fixed
+float constants; derivative expressions retain graph dependencies for higher orders.
+No clipping, domain validation, or p=0/p=1 special handling is introduced. Thus
+pow(0) at zero can produce a NaN gradient, and higher polynomial derivatives at zero
+can encounter singular intermediates. Singular/non-finite derivatives and floating
+exponent subtraction retain ordinary backend arithmetic; no finite-result guarantee
+or universal boundary equivalence across numerical backends is promised.
 
-Numerical implementations are non-mutating, return non-null results, and apply
-functions elementwise with preserved shape/context for tensors. Shared differentiable
-defaults use the unary graph helper, record one operand, preserve context/gradient
-requirements, and retain differentiable contributions for higher derivatives.
-The exponent is a fixed float constant, not a separately tracked operand.
+FloatWrapperImpl delegates to Java Math.exp/log/pow with double intermediates and
+float rounding, including Java NaN, infinity, signed-zero and domain semantics.
+DJL/DL4J numerical implementations remain unchanged. Numerical accuracy follows each
+backend, with tolerance-based finite-value tests. Valid smooth-domain derivatives
+are tested through second order. Uniform boundary policies and improved power
+special cases remain separate decisions requiring agreement.
 
-Proposed contribution formulas, subject to domain and boundary decisions:
-
-| Operation | Incoming-gradient contribution |
-| --- | --- |
-| exp() | incoming.mul(operand.exp()) |
-| log() | incoming.div(operand) |
-| pow(p) | incoming.mul(operand.pow(p - 1)).mul(p) |
-
-Open decisions before implementation: log at zero/negative values; power at zero,
-negative bases, fractional/non-finite exponents, and signed zero; overflow, underflow,
-NaN/infinity and exception policies across numerical backends; precision/tolerance;
-and supported derivative orders at singularities. In particular, blindly applying
-the power formula at p=0 can evaluate a singular intermediate and yield NaN rather
-than the intended zero derivative. Agree special cases (including p=0 and p=1) and
-their forward/higher-derivative semantics before choosing implementations.
-
-This is a documentation-only proposal, not approval of unresolved semantics or
-implementation of all stages. Sigmoid is supplied by the shared activation capability;
-softmax awaits a reduction contract, and max/sum/mean stay tensor reductions.
-
-Core responsibilities: introduce documented math capability interfaces and numerical
-float implementations, then shared differentiable defaults and focused tests. Keep
-core independent of tensor backends. Existing arithmetic/activation contracts remain
-unchanged. Coordinate artifact installation and downstream validation once ready.
+TensorOperations and Tensor inherit the numerical and differentiable capabilities;
+local declarations and exp/log/pow graph rules are removed. Scalar FloatWrapper
+and FloatWrapperAutogradValue also adopt these capabilities. Softmax and reductions
+remain tensor operations.
 
 
 ## Shared sigmoid integration
@@ -920,4 +906,4 @@ FloatWrapperImpl uses a stable sign-dependent double calculation rounded to floa
 both signed zeros yield 0.5, infinities yield zero/one, and NaN remains NaN.
 TensorOperations inherits the declaration, and tensor wrappers inherit the shared
 rule; DJL/DL4J numerical implementations remain in the tensor project unchanged.
-Math functions and softmax/reduction migration remain separate.
+Softmax/reduction migration remains separate.

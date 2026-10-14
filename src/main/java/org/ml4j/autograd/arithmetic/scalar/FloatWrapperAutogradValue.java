@@ -1,5 +1,6 @@
 package org.ml4j.autograd.arithmetic.scalar;
 
+import org.ml4j.autograd.math.DifferentiableMathOperations;
 import org.ml4j.autograd.AutogradValue;
 import org.ml4j.autograd.activation.DifferentiableActivationOperations;
 import org.ml4j.autograd.arithmetic.DifferentiableArithmeticOperations;
@@ -11,5 +12,5 @@ import org.ml4j.autograd.arithmetic.DifferentiableArithmeticOperations;
  * scalar. Void context means no shape metadata is needed. Shared arithmetic and
  * activation defaults supply operation rules; implementations supply graph machinery.
  */
-public interface FloatWrapperAutogradValue extends AutogradValue<FloatWrapperAutogradValue, FloatWrapper, Void>, DifferentiableArithmeticOperations<FloatWrapperAutogradValue, FloatWrapper, Void>, DifferentiableActivationOperations<FloatWrapperAutogradValue, FloatWrapper, Void> {
+public interface FloatWrapperAutogradValue extends AutogradValue<FloatWrapperAutogradValue, FloatWrapper, Void>, DifferentiableArithmeticOperations<FloatWrapperAutogradValue, FloatWrapper, Void>, DifferentiableActivationOperations<FloatWrapperAutogradValue, FloatWrapper, Void>, DifferentiableMathOperations<FloatWrapperAutogradValue, FloatWrapper, Void> {
 }
