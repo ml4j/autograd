@@ -2,8 +2,8 @@ package org.ml4j.autograd.scalar;
 
 import org.junit.jupiter.api.Test;
 import org.ml4j.autograd.AutogradValue;
-import org.ml4j.autograd.arithmetic.scalar.FloatWrapperAutogradValue;
-import org.ml4j.autograd.arithmetic.scalar.FloatWrapperAutogradValueImpl;
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

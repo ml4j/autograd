@@ -1,9 +1,9 @@
 package org.ml4j.autograd.math;
 
 import org.junit.jupiter.api.Test;
-import org.ml4j.autograd.arithmetic.scalar.FloatWrapperAutogradValue;
-import org.ml4j.autograd.arithmetic.scalar.FloatWrapperAutogradValueImpl;
-import org.ml4j.autograd.arithmetic.scalar.FloatWrapperImpl;
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
+import org.ml4j.autograd.scalar.FloatWrapperImpl;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import static org.junit.jupiter.api.Assertions.*;

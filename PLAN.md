@@ -635,3 +635,33 @@ artifact was installed with `./mvnw -o -B -DskipTests install`. Tensor
 `./mvnw -o -B clean verify` passed with 83 tests, including deterministic GPT
 training/inference on both backends. Initial sandboxed tensor execution could not
 extract native libraries; rerunning with native-cache access passed.
+
+
+## Scalar package relocation
+
+Move wrapped scalar interfaces, implementations, tests and demo from
+org.ml4j.autograd.arithmetic.scalar to org.ml4j.autograd.scalar. Update imports
+and documentation to reflect their arithmetic, activation and math capabilities.
+Status: complete. Core `./mvnw -o -B clean verify` passed with 102 tests.
+Installed the updated artifact with `./mvnw -o -B -DskipTests install`.
+Downstream tensor `./mvnw -o -B clean verify` passed with 85 tests,
+including both backend suites and GPT training/inference (native-cache access enabled).
+
+
+## Scalar demo relocation
+
+Move FloatAutogradValueDemo and FloatWrapperAutogradValueDemo into
+org.ml4j.autograd.demo alongside AutogradDemo, and update documented entry points.
+Status: complete. `./mvnw -o -B clean verify` passed with 102 tests. Both
+relocated entry points ran with `java -cp target/classes org.ml4j.autograd.demo.<DemoClass>`
+and printed the expected forward values, gradients and Hessian-vector products.
+
+
+## Cache utility relocation
+
+Move CachingDataSupplier and its tests into org.ml4j.autograd.cache and update
+the tensor adapter import and documentation.
+Status: complete. Core and tensor `./mvnw -o -B clean verify` passed with
+102 and 85 tests respectively, including both backend suites and GPT training/inference.
+Installed the updated core artifact with `./mvnw -o -B -DskipTests install`;
+tensor verification used native-cache access.

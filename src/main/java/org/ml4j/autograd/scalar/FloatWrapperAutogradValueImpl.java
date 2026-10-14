@@ -1,4 +1,4 @@
-package org.ml4j.autograd.arithmetic.scalar;
+package org.ml4j.autograd.scalar;
 
 import org.ml4j.autograd.impl.AutogradValueImpl;
 import org.ml4j.autograd.node.ValueNode;
@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
  * subclass, numerical arithmetic is delegated to FloatWrapper. Forward results are lazy;
-  * supplied numerical data must remain stable. Shared arithmetic and activation rules support
+  * supplied numerical data must remain stable. Shared arithmetic, activation and math rules support
  * local and graph-wide propagation; the implicit scalar seed is one.
  */
 public final class FloatWrapperAutogradValueImpl extends AutogradValueImpl<FloatWrapperAutogradValue, FloatWrapper, Void> implements FloatWrapperAutogradValue {

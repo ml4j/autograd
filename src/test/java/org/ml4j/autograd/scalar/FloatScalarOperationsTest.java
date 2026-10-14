@@ -1,4 +1,4 @@
-package org.ml4j.autograd.arithmetic.scalar;
+package org.ml4j.autograd.scalar;
 
 import org.junit.jupiter.api.Test;
 

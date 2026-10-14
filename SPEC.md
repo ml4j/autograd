@@ -330,7 +330,7 @@ This note describes the reference implementation, not the new library's contract
   are rejected when evaluated; the base implementation introduces no caching.
 - `org.ml4j.autograd.scalar.FloatAutogradValue` is a separate final scalar subclass,
   supporting fixed or deferred stable float data with Void context. `FloatValue` is unchanged.
-- `org.ml4j.autograd.scalar.demo.FloatAutogradValueDemo` demonstrates forward addition
+- `org.ml4j.autograd.demo.FloatAutogradValueDemo` demonstrates forward addition
   and graph/gradient-state inspection, followed by a graph-wide backward pass.
 - Graph-wide backward execution and generic binary derivative rules are implemented as described below.
 
@@ -647,7 +647,7 @@ Native-gradient recording, selection, and suppliers are deferred. Initial tensor
 migration uses library derivative rules; backend native-resource ownership remains
 separate work. No native-gradient or tensor-project implementation is added here.
 
-## Agreed utility: `org.ml4j.autograd.CachingDataSupplier<D>`
+## Agreed utility: `org.ml4j.autograd.cache.CachingDataSupplier<D>`
 
 A final optional Supplier<D> implementation, constructed from Supplier<? extends D>.
 Construction rejects null with NullPointerException without evaluating data. get()
@@ -907,3 +907,22 @@ both signed zeros yield 0.5, infinities yield zero/one, and NaN remains NaN.
 TensorOperations inherits the declaration, and tensor wrappers inherit the shared
 rule; DJL/DL4J numerical implementations remain in the tensor project unchanged.
 Softmax/reduction migration remains separate.
+
+
+## Scalar package organization
+
+FloatWrapper, FloatWrapperImpl, FloatWrapperAutogradValue, and
+FloatWrapperAutogradValueImpl live in org.ml4j.autograd.scalar alongside the raw
+float scalar types. They combine arithmetic, activation and math capabilities,
+so their package is independent of any one operation family. Both scalar demos
+live in org.ml4j.autograd.demo and tests follow the production package.
+Consumers must update imports from org.ml4j.autograd.arithmetic.scalar; no
+compatibility aliases are supplied. Numerical and graph contracts are unchanged.
+
+
+## Cache utility package
+
+CachingDataSupplier and its tests live in org.ml4j.autograd.cache. Consumers
+must update imports from org.ml4j.autograd.CachingDataSupplier; no compatibility
+alias is provided. Lazy evaluation, retry, sequential-use and ownership contracts
+remain unchanged.

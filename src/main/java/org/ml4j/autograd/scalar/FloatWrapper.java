@@ -1,11 +1,11 @@
-package org.ml4j.autograd.arithmetic.scalar;
+package org.ml4j.autograd.scalar;
 
 import org.ml4j.autograd.math.MathOperations;
 import org.ml4j.autograd.activation.ActivationOperations;
 import org.ml4j.autograd.arithmetic.ArithmeticOperations;
 
 /**
- * Exposes a float with non-mutating arithmetic and activations, without autograd graph state.
+ * Exposes a float with non-mutating arithmetic, activations and math, without autograd graph state.
  *
  * <p>Unlike Java's Float, this type implements the library's arithmetic capability.
  * It acts as a scalar example of numerical data a tensor adapter could also provide.

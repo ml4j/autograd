@@ -1,4 +1,4 @@
-package org.ml4j.autograd.scalar.demo;
+package org.ml4j.autograd.demo;
 
 import org.ml4j.autograd.scalar.FloatAutogradValue;
 
