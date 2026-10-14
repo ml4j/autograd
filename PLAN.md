@@ -613,3 +613,19 @@ AutogradDemo ran and printed 24.704082, 138.83382, and 645.5772.
 Status: proposed, documentation only. No code or agreed runtime behaviour changed.
 Each implementation increment still requires agreement; linked tensor work is tracked
 in ../minimal-maven-project/PLAN.md.
+
+
+## Completed increment: shared sigmoid
+
+- [x] Add sigmoid to numerical/shared differentiable activation capabilities.
+- [x] Supply stable float numerical evaluation and the shared incoming * s * (1 - s) rule.
+- [x] Remove tensor-local declaration and derivative override; retain DJL/DL4J numerics.
+- [x] Test scalar boundaries, lazy construction, constants, seeded/repeated passes,
+  and second derivatives; test tensor shape, caching, preservation, repeated and
+  higher derivatives on both backends.
+
+Verification: autograd `./mvnw -o -B verify` passed with 98 tests; the updated
+artifact was installed with `./mvnw -o -B -DskipTests install`. Tensor
+`./mvnw -o -B clean verify` passed with 83 tests, including deterministic GPT
+training/inference on both backends. Initial sandboxed tensor execution could not
+extract native libraries; rerunning with native-cache access passed.

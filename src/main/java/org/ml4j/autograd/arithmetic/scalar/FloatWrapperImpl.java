@@ -117,6 +117,21 @@ public class FloatWrapperImpl implements FloatWrapper {
     }
 
     /**
+     * Returns a sigmoid computed with double intermediates and rounded to float.
+     *
+     * <p>Both signed zeros yield 0.5; negative infinity yields zero, positive infinity
+     * yields one, and NaN remains NaN. Finite tails may round to zero or one.
+     *
+     * @return a new non-null numerical wrapper
+     */
+    @Override
+    public FloatWrapper sigmoid() {
+        double exponential = Math.exp(-Math.abs((double) value));
+        return createFloatWrapper((float) (value >= 0f
+                ? 1d / (1d + exponential) : exponential / (1d + exponential)));
+    }
+
+    /**
      * Creates numerical result data without changing either operand.
      * @param value the calculated scalar
      * @return a new wrapper of the scalar

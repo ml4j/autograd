@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  *
  * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
  * subclass, numerical arithmetic is delegated to FloatWrapper. Forward results are lazy;
- * supplied numerical data must remain stable. Shared arithmetic and ReLU rules support
+  * supplied numerical data must remain stable. Shared arithmetic and activation rules support
  * local and graph-wide propagation; the implicit scalar seed is one.
  */
 public final class FloatWrapperAutogradValueImpl extends AutogradValueImpl<FloatWrapperAutogradValue, FloatWrapper, Void> implements FloatWrapperAutogradValue {

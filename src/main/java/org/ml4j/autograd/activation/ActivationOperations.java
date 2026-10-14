@@ -19,4 +19,15 @@ public interface ActivationOperations<V extends ActivationOperations<V>> {
      * @return a non-null activation result
      */
     V relu();
+
+    /**
+     * Returns the logistic sigmoid, 1 / (1 + exp(-x)).
+     *
+     * <p>Zero becomes 0.5; tensors apply the function elementwise and preserve shape.
+     * The operand's data, graph, and gradient state are unchanged. Implementations
+     * document rounding and non-finite behaviour.
+     *
+     * @return a non-null activation result
+     */
+    V sigmoid();
 }

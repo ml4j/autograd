@@ -8,7 +8,7 @@ import java.util.function.UnaryOperator;
 /**
  * Builds differentiable activations from wrapped numerical operations.
  *
- * <p>Scalar and elementwise tensor ReLU use the unary graph helper and arithmetic
+ * <p>Scalar and elementwise tensor activations use the unary graph helper and arithmetic
  * capabilities for gradient contributions. Wrapped data supplies forward evaluation.
  *
  * @param <V> the differentiable operand and result type
@@ -38,6 +38,27 @@ public interface DifferentiableActivationOperations<
     default V relu() {
         return applyUnaryOperator(D::relu,
                 (incoming, operand) -> incoming.mul(operand.gt(0f)),
+                UnaryOperator.identity());
+    }
+
+    /**
+     * Builds a lazy sigmoid result with this operand as its single graph input.
+     *
+     * <p>Preserves context and gradient requirements without changing operand state.
+     * Backward contributes incoming * s * (1 - s), where s is operand.sigmoid().
+     * Differentiable contributions preserve dependencies for higher derivatives.
+     * Numerical rounding and non-finite behaviour follow wrapped data and arithmetic;
+     * no clipping or finite-gradient guarantee is introduced.
+     *
+     * @return the non-null lazy activation result
+     */
+    @Override
+    default V sigmoid() {
+        return applyUnaryOperator(D::sigmoid,
+                (incoming, operand) -> {
+                    V output = operand.sigmoid();
+                    return incoming.mul(output).mul(output.mul(-1f).add(1f));
+                },
                 UnaryOperator.identity());
     }
 }

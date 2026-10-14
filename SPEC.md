@@ -899,10 +899,25 @@ than the intended zero derivative. Agree special cases (including p=0 and p=1) a
 their forward/higher-derivative semantics before choosing implementations.
 
 This is a documentation-only proposal, not approval of unresolved semantics or
-implementation of all stages. Sigmoid remains a separate activation candidate;
+implementation of all stages. Sigmoid is supplied by the shared activation capability;
 softmax awaits a reduction contract, and max/sum/mean stay tensor reductions.
 
 Core responsibilities: introduce documented math capability interfaces and numerical
 float implementations, then shared differentiable defaults and focused tests. Keep
 core independent of tensor backends. Existing arithmetic/activation contracts remain
 unchanged. Coordinate artifact installation and downstream validation once ready.
+
+
+## Shared sigmoid integration
+
+ActivationOperations declares non-mutating sigmoid(), applying 1 / (1 + exp(-x))
+elementwise with preserved tensor shape. DifferentiableActivationOperations supplies
+one lazy unary graph rule, preserving context and requiresGrad, with contribution
+incoming * s * (1 - s), where s = operand.sigmoid(). Contributions remain
+differentiable for higher derivatives. Constants remain untracked. No clipping or
+finite-result guarantee is added; backend rounding/non-finite arithmetic is retained.
+FloatWrapperImpl uses a stable sign-dependent double calculation rounded to float:
+both signed zeros yield 0.5, infinities yield zero/one, and NaN remains NaN.
+TensorOperations inherits the declaration, and tensor wrappers inherit the shared
+rule; DJL/DL4J numerical implementations remain in the tensor project unchanged.
+Math functions and softmax/reduction migration remain separate.
