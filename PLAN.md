@@ -665,3 +665,38 @@ Status: complete. Core and tensor `./mvnw -o -B clean verify` passed with
 102 and 85 tests respectively, including both backend suites and GPT training/inference.
 Installed the updated core artifact with `./mvnw -o -B -DskipTests install`;
 tensor verification used native-cache access.
+
+
+## Resume point and remaining decisions (2026-10-14)
+
+Current stopping point: core graph traversal, gradient accumulation/reset, repeated
+passes, higher derivatives and stable Parameter handles are implemented. Shared
+arithmetic/comparison defaults, ReLU/sigmoid, and exp/log/pow are adopted by the
+tensor project; DJL/DL4J numerics, shape/broadcast handling, matrix operations,
+reductions and softmax remain there. Scalar implementations live in scalar,
+CachingDataSupplier in cache, and runnable scalar examples in demo.
+
+Last verified state: core and tensor `./mvnw -o -B clean verify` passed with
+102 and 85 tests respectively, including both backend suites and deterministic GPT
+training/inference. The updated autograd 3.0.0-SNAPSHOT artifact is installed locally.
+Native tensor tests required cache access. These are historical results, not new
+verification of future changes. Both relocated scalar demos were also run successfully.
+
+The detailed questions and existing limitations are recorded in SPEC.md under
+"Open decisions for continuing autograd work (2026-10-14)". No next implementation
+has been selected or authorized:
+
+- [ ] Agree shared reduction/context contracts and then softmax placement/dependencies.
+- [ ] Agree power zero/one special cases, higher-order semantics and boundary policies.
+- [ ] Decide whether/how to integrate native gradients while preserving core contracts.
+- [ ] Agree tensor storage copying versus graph retention/detachment semantics.
+- [ ] Agree and validate native resource ownership for sustained training.
+
+When resuming, choose one topic, review its current implementation and open questions,
+agree the smallest contract increment, then implement/test and update SPEC.md and
+PLAN.md. For shared core changes, verify/install core before downstream verification.
+Use both backend suites and deterministic GPT tests for tensor-facing changes.
+Native ownership work additionally needs sustained memory/lifetime validation.
+These topics are independent discussion tracks; this list does not prescribe an
+implementation order or authorize contract changes. Read ../minimal-maven-project/SPEC.md
+and PLAN.md when work crosses into the tensor project.

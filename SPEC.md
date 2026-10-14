@@ -926,3 +926,92 @@ CachingDataSupplier and its tests live in org.ml4j.autograd.cache. Consumers
 must update imports from org.ml4j.autograd.CachingDataSupplier; no compatibility
 alias is provided. Lazy evaluation, retry, sequential-use and ownership contracts
 remain unchanged.
+
+
+## Open decisions for continuing autograd work (2026-10-14)
+
+These are discussion topics, not agreed contracts or authorization to implement.
+Existing contracts remain in force until a specific change is agreed.
+
+### Shared reductions and softmax
+
+Current state: max(), sum(), mean(), sum(axis, keepDimensions), and softmax(axis)
+remain in the tensor project, including their shape/context and backward rules.
+Core arithmetic, activations and math are already shared. Core must stay independent
+of org.ml4j.tensors.Size and DJL/ND4J types.
+
+Decide whether reductions should be a shared capability and which numerical and
+context hooks it needs. Agree whole-value versus axis reductions, axis validation,
+keepDimensions, scalar and empty-input behavior, element counts, gradient expansion
+and broadcasting, and max tie/non-finite policies. Then decide where softmax belongs
+and how it depends on reductions, numerical stabilization and axis metadata.
+Retain differentiable contributions for higher derivatives where supported.
+
+Useful references: ../minimal-maven-project/src/main/java/org/ml4j/tensors/TensorOperations.java
+and DifferentiableWrappedTensorOperations.java in the same directory. Current
+softmax contribution is s * (g - sum(g * s, axis, true)). Do not migrate it by
+assuming shape-changing rules work like the identity-context unary math defaults.
+Validate shapes, axes, ties, seeded gradients and higher derivatives on both backends,
+then deterministic GPT attention/training/inference.
+
+### Power special cases and mathematical boundaries
+
+Current state: DifferentiableMathOperations preserves g * x.pow(p - 1) * p for
+all fixed float exponents. There is no special handling for p=0 or p=1. In particular,
+pow(0) at zero can produce NaN gradients; higher polynomial derivatives at zero can
+also encounter singular intermediates. Numerical domains and precision remain
+backend-defined; FloatWrapperImpl follows Java Math with float-rounded results.
+
+Decide whether to special-case zero/one exponents and how to express zero derivatives
+without singular intermediates while preserving context, incoming-gradient dependencies
+and supported higher-order behavior. Agree zero/negative bases, fractional and
+non-finite exponents, signed zero, and derivative behavior at singularities. Separately,
+decide whether log at zero/negative inputs and overflow/underflow/non-finite values
+should remain backend-defined or gain a common policy. Any proposed policy must
+state its behavior changes and backend feasibility before implementation.
+Validate finite smooth domains and boundary cases separately, including repeated and
+higher derivatives and GPT's pow(-0.5) normalization.
+
+### Integrated native gradients
+
+Current state: tensor wrappers use library derivative rules. Direct native PyTorch
+capability tests exist, but do not mean wrapper native-gradient integration exists.
+
+Decide whether integration is needed, its supported backend scope, and whether it
+requires any core hooks. Agree graph ownership and recording, gradient selection,
+seed/accumulation/reset behavior, constant and leaf toggling, and whether native
+execution supports retained derivative graphs/higher derivatives. Define unsupported
+combinations and prevent accidental double accumulation. Do not restore legacy
+native-selection APIs solely as a shortcut. Compare results with existing library
+rules using deterministic inputs before considering GPT integration.
+
+### Tensor copying and graph detachment
+
+Current state: copying is deferred; legacy copy constructors were removed. Core
+numerical contents are lifetime-stable, and Parameter updates replace immutable leaves.
+Returned float arrays are read-only by contract, even when a backend returns a copy.
+
+Decide separately whether an operation duplicates numerical storage, shares storage,
+retains graph connections, or produces a detached leaf. Agree names and contracts,
+requiresGrad/gradient-state semantics, lazy evaluation and caching, context preservation,
+and backend ownership of copied or shared arrays. Storage copying and graph detachment
+must not be silently conflated. Test storage independence, graph connectivity,
+parameter replacement and source/result lifetime behavior before exposing the API.
+
+### Native resource ownership for long-running training
+
+Current state: Java graph reachability and native resource release are distinct.
+The shared DJL manager owns arrays; registry removal and gradient reset do not establish
+per-step native cleanup. Small deterministic GPT tests pass, but do not prove bounded
+native memory during long training. ND4J allocation behavior also needs review.
+CachingDataSupplier releases its source closure after successful evaluation; it does
+not release cached native resources or define their lifetime.
+
+Decide who owns parameter arrays, temporary forward/backward arrays and retained
+higher-derivative graphs. Investigate scoped managers or another explicit lifecycle
+that keeps live leaves, seeds, cached data and retained gradients valid, including
+parameter replacement and graphs that still reference old leaves. Agree cleanup on
+success/failure and responsibilities for shared storage and lazy unevaluated suppliers.
+Validate live-graph usability plus bounded native memory over sustained training;
+do not equate Java garbage collection with native cleanup. Keep this discussion
+separate from whether core graph or numerical contracts need to change.
