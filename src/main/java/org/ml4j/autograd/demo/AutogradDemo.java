@@ -1,7 +1,7 @@
 package org.ml4j.autograd.demo;
 
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
-import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueImpl;
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValueFactory;
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueFactoryImpl;
 
 /**
  * Runs the scalar arithmetic/ReLU example from Andrej Karpathy's micrograd demo.
@@ -14,11 +14,13 @@ public final class AutogradDemo {
     /** Runs the example; command-line arguments are unused. */
     public static void main(String[] args) {
 
+        FloatWrapperAutogradValueFactory factory = new FloatWrapperAutogradValueFactoryImpl();
+
         // a = Value(-4.0)
-        var a = createAutogradValue(-4.0f, true);
+        var a = factory.create(-4.0f, true);
 
         // b = Value(2.0)
-        var b = createAutogradValue(2.0f, true);
+        var b = factory.create(2.0f, true);
 
         // c = a + b
         var c = a.add(b);
@@ -30,13 +32,13 @@ public final class AutogradDemo {
         c = c.add(c.add(1));
 
         // c += 1 + c + (-a)
-        c = c.add(createAutogradValue(1.0f, false).add(c).add(a.neg()));
+        c = c.add(factory.create(1.0f, false).add(c).add(a.neg()));
 
         // d += d * 2 + (b + a).relu()
         d = d.add(d.mul(2).add(b.add(a).relu()));
 
         // d += 3 * d + (b - a).relu()
-        d = d.add(createAutogradValue(3.0f, false).mul(d).add(b.sub(a).relu()));
+        d = d.add(factory.create(3.0f, false).mul(d).add(b.sub(a).relu()));
 
         // e = c - d
         var e = c.sub(d);
@@ -48,7 +50,7 @@ public final class AutogradDemo {
         var g = f.div(2.0f);
 
         // g += 10.0 / f
-        g = g.add(createAutogradValue(10.0f, false).div(f));
+        g = g.add(factory.create(10.0f, false).div(f));
 
         System.out.println(g.data().get().floatValue()); // Prints 24.704082, the outcome of this forward pass
 
@@ -61,7 +63,4 @@ public final class AutogradDemo {
 
     }
 
-    private static FloatWrapperAutogradValue createAutogradValue(float value, boolean requiresGrad) {
-        return new FloatWrapperAutogradValueImpl(value, requiresGrad);
-    }
 }

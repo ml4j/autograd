@@ -757,3 +757,12 @@ Kept direct construction in the constructor-focused FloatAutogradValueTest and
 for the two implementation-only unary-helper receivers in NegationTest. Seeds and
 contributions in those helper tests use the factory. Assertions remain unchanged.
 Verification: ./mvnw -o -B clean verify passed all 108 tests.
+
+
+## Factory-backed AutogradDemo
+
+Use an interface-typed FloatWrapperAutogradValueFactory in the micrograd demo
+for tracked inputs and constants. Remove the constructor helper; preserve arithmetic
+and printed forward/gradient values.
+Verification: `./mvnw -o -B clean verify` passed all 108 tests. Running
+AutogradDemo printed the expected 24.704082, 138.83382 and 645.5772.
