@@ -1,5 +1,8 @@
 package org.ml4j.autograd.scalar;
 
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueFactoryImpl;
+import org.ml4j.autograd.scalar.impl.FloatWrapperImpl;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7,17 +10,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SharedScalarDefaultsTest {
+    private final FloatWrapperAutogradValueFactory factory =
+            new FloatWrapperAutogradValueFactoryImpl();
+
     private FloatWrapperAutogradValue value(float number, boolean tracked) {
-        return new FloatWrapperAutogradValueImpl(new FloatWrapperImpl(number), tracked);
+        return factory.create(() -> new FloatWrapperImpl(number), null, tracked);
     }
 
     @Test
     void scalarOperationsAreLazyAndHaveOneInputWithCorrectSeededContributions() {
         for (int operation = 0; operation < 4; operation++) {
             var reads = new AtomicInteger();
-            var input = new FloatWrapperAutogradValueImpl(() -> {
+            var input = factory.create(() -> {
                 reads.incrementAndGet(); return new FloatWrapperImpl(6f);
-            }, true);
+            }, null, true);
             var output = switch (operation) {
                 case 0 -> input.add(2f);
                 case 1 -> input.sub(2f);
@@ -56,9 +62,9 @@ class SharedScalarDefaultsTest {
     @Test
     void comparisonsAreLazyConstantLeavesWithNoOperandMutation() {
         var reads = new AtomicInteger();
-        var input = new FloatWrapperAutogradValueImpl(() -> {
+        var input = factory.create(() -> {
             reads.incrementAndGet(); return new FloatWrapperImpl(2f);
-        }, true);
+        }, null, true);
         var stored = value(4f, false);
         input.gradNode().accumulate(stored);
         var strict = input.gt(2f);
@@ -82,9 +88,9 @@ class SharedScalarDefaultsTest {
     void constantHelperMapsContextOnceAndRejectsNullFunctionsWithoutEvaluation() {
         var reads = new AtomicInteger();
         var maps = new AtomicInteger();
-        var input = new FloatWrapperAutogradValueImpl(() -> {
+        var input = factory.create(() -> {
             reads.incrementAndGet(); return new FloatWrapperImpl(2f);
-        }, true);
+        }, null, true);
         var result = input.applyConstantOperator(data -> data.gte(0f), context -> {
             maps.incrementAndGet(); return context;
         });

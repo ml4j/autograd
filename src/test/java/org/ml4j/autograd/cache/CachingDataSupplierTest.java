@@ -1,5 +1,10 @@
 package org.ml4j.autograd.cache;
 
+import org.ml4j.autograd.scalar.FloatAutogradValueFactory;
+
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+
 import org.junit.jupiter.api.Test;
 import org.ml4j.autograd.scalar.FloatAutogradValue;
 
@@ -8,6 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CachingDataSupplierTest {
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
     @Test
     void defersEvaluationAndReusesTheFirstResult() {
         var reads = new AtomicInteger();
@@ -54,7 +62,7 @@ class CachingDataSupplierTest {
     void canSupplyLazyAutogradDataWithoutChangingGraphBehaviour() {
         var reads = new AtomicInteger();
         var cached = new CachingDataSupplier<>(() -> { reads.incrementAndGet(); return 3f; });
-        var leaf = new FloatAutogradValue(cached, true);
+        var leaf = rawFactory.create(cached, null, true);
         var square = leaf.mul(leaf);
         assertEquals(0, reads.get());
         assertEquals(9f, square.data().get());

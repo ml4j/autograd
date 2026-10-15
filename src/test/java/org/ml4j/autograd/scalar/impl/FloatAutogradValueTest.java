@@ -1,6 +1,7 @@
-package org.ml4j.autograd.scalar;
+package org.ml4j.autograd.scalar.impl;
 
 import org.junit.jupiter.api.Test;
+import org.ml4j.autograd.scalar.FloatAutogradValue;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class FloatAutogradValueTest {
     @Test
     void leafOwnsStableNodesWithEmptyGradientAndNoInputs() {
-        var value = new FloatAutogradValue(2f, true);
+        var value = new FloatAutogradValueImpl(2f, true);
         assertEquals(2f, value.data().get());
         assertNull(value.context());
         assertSame(value, value.valueNode().value());
@@ -25,8 +26,8 @@ class FloatAutogradValueTest {
     @Test
     void additionIsLazyAndRecordsOrderedInputsWithoutMutatingOperands() {
         var reads = new AtomicInteger();
-        var first = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 2f; }, false);
-        var second = new FloatAutogradValue(3f, true);
+        var first = new FloatAutogradValueImpl(() -> { reads.incrementAndGet(); return 2f; }, false);
+        var second = new FloatAutogradValueImpl(3f, true);
         var sum = first.add(second);
         assertEquals(0, reads.get());
         assertSame(sum, sum.valueNode().value());
@@ -46,8 +47,8 @@ class FloatAutogradValueTest {
     void additionCombinesBothGradientRequirements() {
         for (boolean left : new boolean[]{false, true}) {
             for (boolean right : new boolean[]{false, true}) {
-                var first = new FloatAutogradValue(2f, left);
-                var second = new FloatAutogradValue(3f, right);
+                var first = new FloatAutogradValueImpl(2f, left);
+                var second = new FloatAutogradValueImpl(3f, right);
                 assertEquals(left || right, first.add(second).requiresGrad());
             }
         }
@@ -55,7 +56,7 @@ class FloatAutogradValueTest {
 
     @Test
     void repeatedOperandsAndChainedResultsRetainTheirGraph() {
-        var x = new FloatAutogradValue(2f, true);
+        var x = new FloatAutogradValueImpl(2f, true);
         var doubled = x.add(x);
         assertEquals(List.of(x.valueNode(), x.valueNode()), doubled.valueNode().inputs());
         assertThrows(UnsupportedOperationException.class, () -> doubled.valueNode().inputs().clear());
@@ -66,7 +67,7 @@ class FloatAutogradValueTest {
 
     @Test
     void localBackwardWithoutSeedDoesNotChangeGradientState() {
-        var value = new FloatAutogradValue(2f, true);
+        var value = new FloatAutogradValueImpl(2f, true);
         var sum = value.add(value);
         sum.valueNode().backward(); // No incoming gradient: local propagation does nothing.
         assertTrue(sum.gradNode().gradient().isEmpty());
@@ -75,10 +76,10 @@ class FloatAutogradValueTest {
 
     @Test
     void nullInputsAreRejectedWithoutEagerNumericalEvaluation() {
-        assertThrows(NullPointerException.class, () -> new FloatAutogradValue(null, false));
-        var value = new FloatAutogradValue(2f, false);
+        assertThrows(NullPointerException.class, () -> new FloatAutogradValueImpl(null, false));
+        var value = new FloatAutogradValueImpl(2f, false);
         assertThrows(NullPointerException.class, () -> value.add(null));
-        var invalid = new FloatAutogradValue(() -> null, false);
+        var invalid = new FloatAutogradValueImpl(() -> null, false);
         assertThrows(NullPointerException.class, () -> invalid.data().get());
     }
 }

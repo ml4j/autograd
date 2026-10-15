@@ -1,15 +1,19 @@
 package org.ml4j.autograd.activation;
 
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValueFactory;
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueFactoryImpl;
 import org.junit.jupiter.api.Test;
 import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
-import org.ml4j.autograd.scalar.FloatWrapperImpl;
+import org.ml4j.autograd.scalar.impl.FloatWrapperImpl;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SigmoidTest {
+    private final FloatWrapperAutogradValueFactory factory =
+            new FloatWrapperAutogradValueFactoryImpl();
+
     private FloatWrapperAutogradValue value(float x, boolean tracked) {
-        return new FloatWrapperAutogradValueImpl(x, tracked);
+        return factory.create(x, tracked);
     }
 
     @Test
@@ -28,10 +32,10 @@ class SigmoidTest {
     @Test
     void constructionIsLazyAndPreservesGraphAndGradientState() {
         var reads = new AtomicInteger();
-        var input = new FloatWrapperAutogradValueImpl(() -> {
+        var input = factory.create(() -> {
             reads.incrementAndGet();
             return new FloatWrapperImpl(0f);
-        }, true);
+        }, null, true);
         var stored = value(7f, false);
         input.gradNode().accumulate(stored);
         var output = input.sigmoid();

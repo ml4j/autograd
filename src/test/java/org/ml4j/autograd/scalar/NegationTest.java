@@ -1,17 +1,28 @@
 package org.ml4j.autograd.scalar;
 
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueImpl;
+
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueFactoryImpl;
+
 import org.junit.jupiter.api.Test;
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
-import org.ml4j.autograd.scalar.FloatWrapperImpl;
+import org.ml4j.autograd.scalar.impl.FloatWrapperImpl;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class NegationTest {
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
+    private final FloatWrapperAutogradValueFactory factory =
+            new FloatWrapperAutogradValueFactoryImpl();
+
     @Test void rawNegationIsLazyAndPreservesOperandState() {
         var reads = new AtomicInteger();
-        var x = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 2f; }, true);
+        var x = rawFactory.create(() -> { reads.incrementAndGet(); return 2f; }, null, true);
         var result = x.neg();
         assertEquals(0, reads.get());
         assertTrue(result.requiresGrad());
@@ -25,9 +36,9 @@ class NegationTest {
     }
 
     @Test void explicitSeedsAndRepeatedPassesAccumulateOnlyNewContributions() {
-        var x = new FloatAutogradValue(2f, true);
+        var x = rawFactory.create(2f, true);
         var result = x.neg();
-        var seed = new FloatAutogradValue(3f, false);
+        var seed = rawFactory.create(3f, false);
         result.backward(seed);
         var first = x.gradNode().gradient().orElseThrow();
         assertEquals(-3f, first.data().get());
@@ -41,7 +52,7 @@ class NegationTest {
     }
 
     @Test void rawNegatedSquareSupportsSecondDerivatives() {
-        var x = new FloatAutogradValue(3f, true);
+        var x = rawFactory.create(3f, true);
         var result = x.mul(x).neg(); // -x²: value -9, first derivative -6, second -2.
         assertEquals(-9f, result.data().get());
         result.backward();
@@ -57,7 +68,7 @@ class NegationTest {
         var data = new FloatWrapperImpl(3f);
         assertEquals(-3f, data.neg().floatValue());
         assertEquals(3f, data.floatValue());
-        var x = new FloatWrapperAutogradValueImpl(data, true);
+        var x = factory.create(() -> data, null, true);
         var result = x.neg().mul(x); // (-x)*x exercises unary propagation inside a product.
         assertEquals(-9f, result.data().get().floatValue());
         result.backward();
@@ -69,26 +80,27 @@ class NegationTest {
     }
 
     @Test void constantNegationReceivesNoLocalContribution() {
-        var raw = new FloatAutogradValue(2f, false);
+        var raw = rawFactory.create(2f, false);
         var result = raw.neg();
         assertFalse(result.requiresGrad());
-        result.gradNode().accumulate(new FloatAutogradValue(1f, false));
+        result.gradNode().accumulate(rawFactory.create(1f, false));
         result.valueNode().backward();
         assertTrue(raw.gradNode().gradient().isEmpty());
         assertThrows(IllegalStateException.class, result::backward);
-        var wrapped = new FloatWrapperAutogradValueImpl(2f, false);
+        var wrapped = factory.create(2f, false);
         var wrappedResult = wrapped.neg();
         assertFalse(wrappedResult.requiresGrad());
         assertEquals(-2f, wrappedResult.data().get().floatValue());
-        wrappedResult.gradNode().accumulate(new FloatWrapperAutogradValueImpl(1f, false));
+        wrappedResult.gradNode().accumulate(factory.create(1f, false));
         wrappedResult.valueNode().backward();
         assertTrue(wrapped.gradNode().gradient().isEmpty());
     }
 
     @Test void unaryHelperMapsContextOnceAndDispatchesOriginalOperandAndSeed() {
-        var x = new FloatAutogradValue(2f, true);
-        var seed = new FloatAutogradValue(4f, false);
-        var contribution = new FloatAutogradValue(7f, false);
+        // Exercise the implementation-only unary graph helper directly.
+        var x = new FloatAutogradValueImpl(2f, true);
+        var seed = rawFactory.create(4f, false);
+        var contribution = rawFactory.create(7f, false);
         var maps = new AtomicInteger();
         var rules = new AtomicInteger();
         var result = x.applyUnaryOperator(value -> -value, (incoming, operand) -> {
@@ -109,7 +121,8 @@ class NegationTest {
     }
 
     @Test void unaryHelperRejectsNullArgumentsAndNullContributions() {
-        var x = new FloatAutogradValue(2f, true);
+        // Exercise the implementation-only unary graph helper directly.
+        var x = new FloatAutogradValueImpl(2f, true);
         assertThrows(NullPointerException.class,
                 () -> x.applyUnaryOperator(null, (incoming, operand) -> incoming, context -> context));
         assertThrows(NullPointerException.class,

@@ -1,36 +1,22 @@
 package org.ml4j.autograd.scalar;
 
-import org.ml4j.autograd.impl.AutogradValueImpl;
-import org.ml4j.autograd.node.ValueNode;
-
-import java.util.List;
-import java.util.function.Supplier;
+import org.ml4j.autograd.AutogradValue;
 
 /**
- * Demonstrates a scalar implementation of the shared autograd structure.
+ * A differentiable scalar whose numerical data is a Java Float.
  *
- * <pre>{@code
- * var first = new FloatAutogradValue(2f, true);
- * var second = new FloatAutogradValue(3f, false);
- * var sum = first.add(second);
- * Float data = sum.data().get(); // 5.0
- * }</pre>
+ * <p>Read a scalar with {@code value.data().get()}. Arithmetic is implemented
+ * directly over float values, with lazy graph results and Void context. Unlike
+ * {@link FloatWrapperAutogradValue}, this type does not compose wrapped numerical
+ * arithmetic, activation or math capabilities. Existing values are not mutated.
  *
- * <p>Uses Void context because scalars need no shape metadata. Unlike a tensor
- * subclass, numerical addition is ordinary float addition. Forward results are lazy;
- * supplied numerical data must remain stable. Arithmetic operations support
- * local and graph-wide propagation; the implicit scalar seed is one.
+ * @see org.ml4j.autograd.scalar.impl.FloatAutogradValueImpl
+ * @see FloatAutogradValueFactory
  */
-public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradValue, Float, Void> {
+public interface FloatAutogradValue extends AutogradValue<FloatAutogradValue, Float, Void> {
 
     /** Adds primitive scalar data through the generic differentiable operation machinery. */
-    @Override
-    public FloatAutogradValue add(FloatAutogradValue other) {
-        return applyBinaryOperator(other, (leftData, rightData) -> leftData + rightData,
-                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
-                (incomingGradient, leftOperand, rightOperand) -> incomingGradient,
-                this::mapContext);
-    }
+    FloatAutogradValue add(FloatAutogradValue other);
 
     /**
      * Returns the difference, for example 5 minus 3 equals 2.
@@ -44,9 +30,7 @@ public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradVal
      * @return the lazy difference represented by negation and addition nodes
      * @throws NullPointerException if other is null
      */
-    public FloatAutogradValue sub(FloatAutogradValue other) {
-        return add(other.neg());
-    }
+    FloatAutogradValue sub(FloatAutogradValue other);
 
     /**
      * Returns the product of this scalar and another scalar.
@@ -63,12 +47,7 @@ public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradVal
      * @return the lazy multiplication result
      * @throws NullPointerException if other is null
      */
-    public FloatAutogradValue mul(FloatAutogradValue other) {
-        return applyBinaryOperator(other, (left, right) -> left * right,
-                (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(rightOperand),
-                (incomingGradient, leftOperand, rightOperand) -> incomingGradient.mul(leftOperand),
-                this::mapContext);
-    }
+    FloatAutogradValue mul(FloatAutogradValue other);
 
     /**
      * Returns the lazy quotient, for example 6 divided by 2 is 3.
@@ -83,13 +62,7 @@ public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradVal
      * @return the lazy differentiable quotient
      * @throws NullPointerException if other is null
      */
-    public FloatAutogradValue div(FloatAutogradValue other) {
-        return applyBinaryOperator(other, (left, right) -> left / right,
-                (incomingGradient, leftOperand, rightOperand) -> incomingGradient.div(rightOperand),
-                (incomingGradient, leftOperand, rightOperand) ->
-                        incomingGradient.mul(leftOperand).neg().div(rightOperand.mul(rightOperand)),
-                this::mapContext);
-    }
+    FloatAutogradValue div(FloatAutogradValue other);
 
     /**
      * Returns this scalar's negation, for example 2 becomes -2.
@@ -100,49 +73,5 @@ public final class FloatAutogradValue extends AutogradValueImpl<FloatAutogradVal
      *
      * @return the lazy differentiable negation
      */
-    public FloatAutogradValue neg() {
-        return applyUnaryOperator(value -> -value,
-                (incomingGradient, operand) -> incomingGradient.neg(), context -> context);
-    }
-
-    /**
-     * Creates a scalar leaf from fixed numerical data.
-     * @param value the scalar, including any valid primitive float value
-     * @param requiresGrad whether a future backward pass should calculate its gradient
-     */
-    public FloatAutogradValue(float value, boolean requiresGrad) {
-        this(() -> value, requiresGrad);
-    }
-
-    /**
-     * Creates a scalar leaf with deferred numerical data.
-     * @param data a supplier of stable, non-null float data
-     * @param requiresGrad whether a future backward pass should calculate its gradient
-     * @throws NullPointerException if the supplier is null
-     */
-    public FloatAutogradValue(Supplier<Float> data, boolean requiresGrad) {
-        this(data, requiresGrad, List.of());
-    }
-
-    private FloatAutogradValue(Supplier<Float> data, boolean requiresGrad, List<? extends ValueNode<?>> inputs) {
-        super(data, null, requiresGrad, inputs);
-    }
-
-    /** Returns this scalar as the node's concrete owner. */
-    @Override protected FloatAutogradValue self() { return this; }
-
-    /** Supplies a constant scalar seed of one for implicit backward execution. */
-    @Override protected FloatAutogradValue defaultGradient() {
-        return new FloatAutogradValue(1f, false);
-    }
-
-    /** Scalars need no context metadata. */
-    @Override public Void mapContext(Void left, Void right) { return null; }
-
-    /** Constructs the lazy scalar result with its ordered operands and combined gradient requirement. */
-    @Override
-    protected FloatAutogradValue createAutogradValue(Supplier<Float> dataSupplier, Void context,
-            boolean requiresGrad, List<? extends ValueNode<?>> inputs) {
-        return new FloatAutogradValue(dataSupplier, requiresGrad, inputs);
-    }
+    FloatAutogradValue neg();
 }

@@ -1,5 +1,8 @@
 package org.ml4j.autograd.demo;
 
+import org.ml4j.autograd.scalar.FloatAutogradValueFactory;
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
 import org.ml4j.autograd.scalar.FloatAutogradValue;
 
 /** Demonstrates scalar addition, multiplication, and differentiating gradients for a Hessian-vector product. */
@@ -11,8 +14,9 @@ public final class FloatAutogradValueDemo {
      * @param args unused command-line arguments
      */
     public static void main(String[] args) {
-        var first = new FloatAutogradValue(2f, false);
-        var second = new FloatAutogradValue(3f, true);
+        FloatAutogradValueFactory factory = new FloatAutogradValueFactoryImpl();
+        var first = factory.create(2f, false);
+        var second = factory.create(3f, true);
         var sum = first.add(second);
         System.out.println("Forward sum: " + sum.data().get()); // Forward sum: 5.0
         System.out.println("Input count: " + sum.valueNode().inputs().size()); // Input count: 2
@@ -23,8 +27,8 @@ public final class FloatAutogradValueDemo {
         System.out.println("Constant gradient: " + first.gradNode().gradient()); // Constant gradient: Optional.empty
         System.out.println("Tracked gradient: " + second.gradNode().gradient().orElseThrow().data().get()); // Tracked gradient: 1.0
 
-        var x = new FloatAutogradValue(0.5f, true);
-        var y = new FloatAutogradValue(0.6f, true);
+        var x = factory.create(0.5f, true);
+        var y = factory.create(0.6f, true);
         var z = x.mul(x).add(y.mul(x)).add(y.mul(y));
         z.backward();
         var gx = x.gradNode().gradient().orElseThrow();
@@ -33,7 +37,7 @@ public final class FloatAutogradValueDemo {
         // Reset the state handles, retaining the gradient expressions and their own graphs.
         x.gradNode().reset();
         y.gradNode().reset();
-        gx.mul(new FloatAutogradValue(2f, false)).add(gy).backward();
+        gx.mul(factory.create(2f, false)).add(gy).backward();
         System.out.println("Hessian times (2, 1): " + x.gradNode().gradient().orElseThrow().data().get()
                 + ", " + y.gradNode().gradient().orElseThrow().data().get()); // Hessian times (2, 1): 5.0, 4.0
     }

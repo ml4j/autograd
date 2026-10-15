@@ -1,22 +1,32 @@
 package org.ml4j.autograd.scalar;
 
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueFactoryImpl;
+
 import org.junit.jupiter.api.Test;
 import org.ml4j.autograd.AutogradValue;
 import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class GradientToggleTest {
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
+    private final FloatWrapperAutogradValueFactory factory =
+            new FloatWrapperAutogradValueFactoryImpl();
+
     @Test
     void togglingPreservesDataNodesAndStoredGradientWithoutEvaluation() {
         var reads = new AtomicInteger();
-        var leaf = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 2f; }, true);
+        var leaf = rawFactory.create(() -> { reads.incrementAndGet(); return 2f; }, null, true);
         var node = leaf.valueNode();
         var handle = leaf.gradNode();
-        var stored = new FloatAutogradValue(7f, false);
+        var stored = rawFactory.create(7f, false);
         handle.accumulate(stored);
         AutogradValue<FloatAutogradValue, Float, Void> value = leaf;
         value.setRequiresGrad(false);
@@ -35,7 +45,7 @@ class GradientToggleTest {
 
     @Test
     void futureGraphsUseTheNewFlagAndExistingResultsKeepTheirFlags() {
-        var leaf = new FloatAutogradValue(3f, false);
+        var leaf = rawFactory.create(3f, false);
         var inference = leaf.mul(leaf);
         leaf.setRequiresGrad(true);
         assertFalse(inference.requiresGrad());
@@ -57,7 +67,7 @@ class GradientToggleTest {
 
     @Test
     void binaryAndUnaryResultsRejectChangesIncludingNoOpRequests() {
-        var leaf = new FloatWrapperAutogradValueImpl(2f, true);
+        var leaf = factory.create(2f, true);
         leaf.setRequiresGrad(false);
         var binary = leaf.add(leaf);
         var unary = leaf.neg();

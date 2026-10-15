@@ -1,4 +1,6 @@
-package org.ml4j.autograd.scalar;
+package org.ml4j.autograd.scalar.impl;
+
+import org.ml4j.autograd.scalar.FloatWrapper;
 
 /**
  * Stores a fixed float and returns new wrappers for arithmetic results.

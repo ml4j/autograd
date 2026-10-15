@@ -1,4 +1,7 @@
-package org.ml4j.autograd.scalar;
+package org.ml4j.autograd.scalar.impl;
+
+import org.ml4j.autograd.scalar.FloatWrapper;
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
 
 import org.ml4j.autograd.impl.AutogradValueImpl;
 import org.ml4j.autograd.node.ValueNode;

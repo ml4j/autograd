@@ -1,17 +1,21 @@
 package org.ml4j.autograd.activation;
 
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValueFactory;
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueFactoryImpl;
 import org.junit.jupiter.api.Test;
 import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
-import org.ml4j.autograd.scalar.FloatWrapperImpl;
+import org.ml4j.autograd.scalar.impl.FloatWrapperImpl;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ReluTest {
+    private final FloatWrapperAutogradValueFactory factory =
+            new FloatWrapperAutogradValueFactoryImpl();
+
     private FloatWrapperAutogradValue value(float number, boolean tracked) {
-        return new FloatWrapperAutogradValueImpl(number, tracked);
+        return factory.create(number, tracked);
     }
 
     @Test
@@ -28,9 +32,9 @@ class ReluTest {
     @Test
     void constructionIsLazyAndPreservesNodesContextAndStoredGradient() {
         var reads = new AtomicInteger();
-        var input = new FloatWrapperAutogradValueImpl(() -> {
+        var input = factory.create(() -> {
             reads.incrementAndGet(); return new FloatWrapperImpl(2f);
-        }, true);
+        }, null, true);
         var stored = value(7f, false);
         input.gradNode().accumulate(stored);
         var output = input.relu();

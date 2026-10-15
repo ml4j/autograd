@@ -1,7 +1,7 @@
 package org.ml4j.autograd.demo;
 
 import org.ml4j.autograd.scalar.FloatWrapperAutogradValue;
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueImpl;
 
 /**
  * Runs the scalar arithmetic/ReLU example from Andrej Karpathy's micrograd demo.

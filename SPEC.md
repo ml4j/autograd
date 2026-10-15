@@ -911,9 +911,9 @@ Softmax/reduction migration remains separate.
 
 ## Scalar package organization
 
-FloatWrapper, FloatWrapperImpl, FloatWrapperAutogradValue, and
-FloatWrapperAutogradValueImpl live in org.ml4j.autograd.scalar alongside the raw
-float scalar types. They combine arithmetic, activation and math capabilities,
+FloatWrapper, FloatWrapperAutogradValue and their factory interface live in
+org.ml4j.autograd.scalar alongside the raw float scalar types. The three wrapped
+scalar implementation classes live in org.ml4j.autograd.scalar.impl. They combine arithmetic, activation and math capabilities,
 so their package is independent of any one operation family. Both scalar demos
 live in org.ml4j.autograd.demo and tests follow the production package.
 Consumers must update imports from org.ml4j.autograd.arithmetic.scalar; no
@@ -1015,3 +1015,41 @@ success/failure and responsibilities for shared storage and lazy unevaluated sup
 Validate live-graph usability plus bounded native memory over sustained training;
 do not equate Java garbage collection with native cleanup. Keep this discussion
 separate from whether core graph or numerical contracts need to change.
+
+
+## Wrapped scalar leaf factory
+
+FloatWrapperAutogradValueFactory in org.ml4j.autograd.scalar extends
+AutogradValueFactory<FloatWrapperAutogradValue, FloatWrapper, Void> and adds
+create(float value, boolean requiresGrad). FloatWrapperAutogradValueFactoryImpl
+in org.ml4j.autograd.scalar.impl delegates both overloads to existing value constructors.
+Void context is null. Both methods create independent leaves with explicit tracking,
+empty inputs, no callback and absent gradients. Supplier creation remains lazy and
+adds no caching, evaluation, copying or detachment policy. Non-null suppliers return
+stable non-null numerical data, following the existing Value contract. Factories
+construct leaves only; internal createAutogradValue continues to construct graph
+results. No raw-float factory or abstract factory base is added in this increment.
+
+
+## Wrapped scalar implementation package
+
+FloatWrapperImpl, FloatWrapperAutogradValueImpl and
+FloatWrapperAutogradValueFactoryImpl live in org.ml4j.autograd.scalar.impl.
+The four focused numerical/value/factory test classes follow that package.
+Interfaces, raw FloatValue and shared scalar operation tests remain in scalar;
+FloatAutogradValue is now an interface with its implementation in scalar.impl; demos remain in demo. Consumers update implementation
+imports. Numerical, factory, supplier and graph contracts are unchanged.
+
+
+## Raw scalar interface and factory
+
+FloatAutogradValue is an interface extending AutogradValue<FloatAutogradValue,
+Float, Void> and declaring its existing add/sub/mul/div/neg operations. Data reads
+return Float directly; shared activation/math capabilities remain exclusive to the
+wrapped type. scalar.impl.FloatAutogradValueImpl preserves existing constructors,
+lazy non-cached suppliers, graph rules, null context and implicit seed one.
+FloatAutogradValueFactory binds the generic factory types and adds primitive
+create(float, boolean). scalar.impl.FloatAutogradValueFactoryImpl delegates to
+constructors, creating independent leaves without evaluating suppliers. No operation
+result construction moves into the factory. Clients replace direct construction
+with the implementation or factory; behavior and derivative semantics are unchanged.

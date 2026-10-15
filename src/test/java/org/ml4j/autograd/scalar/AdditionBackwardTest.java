@@ -1,12 +1,18 @@
 package org.ml4j.autograd.scalar;
 
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AdditionBackwardTest {
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
     private FloatAutogradValue value(float data, boolean requiresGrad) {
-        return new FloatAutogradValue(data, requiresGrad);
+        return rawFactory.create(data, requiresGrad);
     }
 
     private float gradient(FloatAutogradValue value) {

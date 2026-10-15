@@ -1,5 +1,8 @@
 package org.ml4j.autograd.scalar;
 
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -8,8 +11,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MultiplicationTest {
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
     private FloatAutogradValue value(float data, boolean requiresGrad) {
-        return new FloatAutogradValue(data, requiresGrad);
+        return rawFactory.create(data, requiresGrad);
     }
     private float gradient(FloatAutogradValue value) {
         return value.gradNode().gradient().orElseThrow().data().get();
@@ -17,7 +23,7 @@ class MultiplicationTest {
 
     @Test void productIsLazyAndPreservesOperandStructure() {
         var reads = new AtomicInteger();
-        var left = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 2f; }, true);
+        var left = rawFactory.create(() -> { reads.incrementAndGet(); return 2f; }, null, true);
         var right = value(3f, true);
         var product = left.mul(right);
         assertEquals(0, reads.get());

@@ -1,10 +1,15 @@
-package org.ml4j.autograd.scalar;
+package org.ml4j.autograd.scalar.impl;
+
+import org.ml4j.autograd.scalar.FloatWrapperAutogradValueFactory;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FloatScalarOperationsTest {
+    private final FloatWrapperAutogradValueFactory factory =
+            new FloatWrapperAutogradValueFactoryImpl();
+
     @Test
     void scalarArithmeticReturnsNewWrappersAndPreservesInput() {
         var input = new FloatWrapperImpl(6f);
@@ -41,7 +46,7 @@ class FloatScalarOperationsTest {
         var array = numerical.dataAsFloatArray();
         assertEquals(Float.floatToRawIntBits(-0f), Float.floatToRawIntBits(array[0]));
         assertNotSame(array, numerical.dataAsFloatArray());
-        var value = new FloatWrapperAutogradValueImpl(numerical, true);
+        var value = factory.create(() -> numerical, null, true);
         assertArrayEquals(array, value.dataAsFloatArray());
         assertTrue(value.gradNode().gradient().isEmpty());
         assertTrue(value.requiresGrad());

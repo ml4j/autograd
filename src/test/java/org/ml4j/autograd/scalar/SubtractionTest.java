@@ -1,23 +1,33 @@
 package org.ml4j.autograd.scalar;
 
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueFactoryImpl;
+
 import org.junit.jupiter.api.Test;
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
-import org.ml4j.autograd.scalar.FloatWrapperImpl;
+import org.ml4j.autograd.scalar.impl.FloatWrapperImpl;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SubtractionTest {
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
+    private final FloatWrapperAutogradValueFactory factory =
+            new FloatWrapperAutogradValueFactoryImpl();
+
     @Test void rawSubtractionIsLazyAndDoesNotMutateOperands() {
         var reads = new AtomicInteger();
-        var left = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 5f; }, true);
-        var right = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 3f; }, true);
+        var left = rawFactory.create(() -> { reads.incrementAndGet(); return 5f; }, null, true);
+        var right = rawFactory.create(() -> { reads.incrementAndGet(); return 3f; }, null, true);
         var result = left.sub(right);
         assertEquals(0, reads.get());
         assertEquals(2f, result.data().get());
         assertEquals(2, reads.get());
-        result.backward(new FloatAutogradValue(4f, false));
+        result.backward(rawFactory.create(4f, false));
         assertEquals(4f, left.gradNode().gradient().orElseThrow().data().get());
         assertEquals(-4f, right.gradNode().gradient().orElseThrow().data().get());
         assertEquals(5f, left.data().get());
@@ -25,28 +35,28 @@ class SubtractionTest {
     }
 
     @Test void wrappedDefaultRetainsCompositionAndSignedGradients() {
-        var left = new FloatWrapperAutogradValueImpl(5f, true);
-        var right = new FloatWrapperAutogradValueImpl(3f, true);
+        var left = factory.create(5f, true);
+        var right = factory.create(3f, true);
         var result = left.sub(right);
         assertSame(left.valueNode(), result.valueNode().inputs().getFirst());
         var negation = result.valueNode().inputs().get(1);
         assertEquals(1, negation.inputs().size());
         assertSame(right.valueNode(), negation.inputs().getFirst());
         assertEquals(2f, result.data().get().floatValue());
-        result.backward(new FloatWrapperAutogradValueImpl(4f, false));
+        result.backward(factory.create(4f, false));
         assertEquals(4f, left.gradNode().gradient().orElseThrow().data().get().floatValue());
         assertEquals(-4f, right.gradNode().gradient().orElseThrow().data().get().floatValue());
     }
 
     @Test void selfSubtractionCancelsAndRepeatedPassesRefreshIntermediates() {
-        var x = new FloatAutogradValue(3f, true);
+        var x = rawFactory.create(3f, true);
         var cancellation = x.sub(x);
         assertEquals(0f, cancellation.data().get());
         cancellation.backward();
         assertEquals(0f, x.gradNode().gradient().orElseThrow().data().get());
         cancellation.backward();
         assertEquals(0f, x.gradNode().gradient().orElseThrow().data().get());
-        var right = new FloatAutogradValue(2f, true);
+        var right = rawFactory.create(2f, true);
         var difference = x.sub(right);
         difference.backward();
         var firstRightGradient = right.gradNode().gradient().orElseThrow();
@@ -57,8 +67,8 @@ class SubtractionTest {
     }
 
     @Test void constantPositionsAreSkippedAndRequirementsAreCombined() {
-        var constant = new FloatWrapperAutogradValueImpl(5f, false);
-        var tracked = new FloatWrapperAutogradValueImpl(3f, true);
+        var constant = factory.create(5f, false);
+        var tracked = factory.create(3f, true);
         var result = constant.sub(tracked);
         assertTrue(result.requiresGrad());
         result.backward();
@@ -68,13 +78,13 @@ class SubtractionTest {
         tracked.sub(constant).backward();
         assertTrue(constant.gradNode().gradient().isEmpty());
         assertEquals(1f, tracked.gradNode().gradient().orElseThrow().data().get().floatValue());
-        var constantResult = constant.sub(new FloatWrapperAutogradValueImpl(2f, false));
+        var constantResult = constant.sub(factory.create(2f, false));
         assertFalse(constantResult.requiresGrad());
         assertEquals(3f, constantResult.data().get().floatValue());
     }
 
     @Test void compositionWithMultiplicationPreservesSecondDerivatives() {
-        var x = new FloatAutogradValue(3f, true);
+        var x = rawFactory.create(3f, true);
         x.mul(x).sub(x).backward(); // x²-x: first derivative 5, second derivative 2.
         var first = x.gradNode().gradient().orElseThrow();
         assertEquals(5f, first.data().get());
@@ -82,7 +92,7 @@ class SubtractionTest {
         first.backward();
         assertEquals(2f, x.gradNode().gradient().orElseThrow().data().get());
 
-        var wrapped = new FloatWrapperAutogradValueImpl(3f, true);
+        var wrapped = factory.create(3f, true);
         wrapped.sub(wrapped.mul(wrapped)).backward(); // x-x²: first -5, second -2.
         var wrappedFirst = wrapped.gradNode().gradient().orElseThrow();
         assertEquals(-5f, wrappedFirst.data().get().floatValue());
@@ -98,8 +108,8 @@ class SubtractionTest {
         assertEquals(5f, left.floatValue());
         assertEquals(3f, right.floatValue());
         assertThrows(NullPointerException.class, () -> left.sub(null));
-        var raw = new FloatAutogradValue(5f, true);
-        var wrapped = new FloatWrapperAutogradValueImpl(5f, true);
+        var raw = rawFactory.create(5f, true);
+        var wrapped = factory.create(5f, true);
         assertThrows(NullPointerException.class, () -> raw.sub(null));
         assertThrows(NullPointerException.class, () -> wrapped.sub(null));
         assertTrue(raw.gradNode().gradient().isEmpty());

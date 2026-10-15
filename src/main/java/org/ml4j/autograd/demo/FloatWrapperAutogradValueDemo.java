@@ -1,6 +1,6 @@
 package org.ml4j.autograd.demo;
 
-import org.ml4j.autograd.scalar.FloatWrapperAutogradValueImpl;
+import org.ml4j.autograd.scalar.impl.FloatWrapperAutogradValueImpl;
 
 /** Demonstrates shared arithmetic defaults with wrapped scalar data and a Hessian-vector product. */
 public final class FloatWrapperAutogradValueDemo {

@@ -700,3 +700,60 @@ Native ownership work additionally needs sustained memory/lifetime validation.
 These topics are independent discussion tracks; this list does not prescribe an
 implementation order or authorize contract changes. Read ../minimal-maven-project/SPEC.md
 and PLAN.md when work crosses into the tensor project.
+
+
+## Wrapped scalar factory pattern
+
+Add the typed FloatWrapperAutogradValueFactory interface and delegating scalar
+implementation, with primitive/explicit-tracking and inherited supplier creation.
+Verify fresh leaf state, generic factory use, lazy/non-cached suppliers, null supplier
+rejection and derivative integration. Existing constructor semantics remain unchanged.
+Status: complete. `./mvnw -o -B clean verify` passed all 105 tests, including
+three factory tests for leaf independence/tracking, generic lazy supplier creation,
+null supplier rejection and repeated/higher-order backward integration.
+
+
+## Separate wrapped scalar numerical and autograd tests
+
+Keep the numerical arithmetic test in FloatWrapperTest. Move the four existing
+tracking/gradient, higher-derivative and repeated-pass tests unchanged into
+FloatWrapperAutogradValueTest. `./mvnw -o -B clean verify` passed all 105 tests; the test count is unchanged.
+
+
+## Factory-backed wrapped scalar behavior fixtures
+
+Migrated wrapped-value creation in nine further behavioral test classes to the
+FloatWrapperAutogradValueFactory interface. Existing numerical objects and deferred
+suppliers use inherited create(supplier, null, requiresGrad); primitive fixtures use
+the scalar overload. Raw FloatAutogradValue fixtures and assertions are unchanged.
+Verification: ./mvnw -o -B clean verify passed all 105 tests.
+
+
+## Wrapped scalar implementation package
+
+Move the three wrapped scalar *Impl classes and four focused tests into scalar.impl.
+Update imports, demos and links; retain interfaces/raw scalar types and shared
+operation tests in their current packages. Behavior unchanged.
+Verification: ./mvnw -o -B clean verify passed all 105 tests.
+
+
+## Raw scalar interface and factory pattern
+
+Split FloatAutogradValue into scalar interface and scalar.impl implementation;
+add typed factory and delegating implementation. Retain arithmetic/graph behavior,
+update constructor callers/demos and move constructor-focused tests to scalar.impl.
+Clarify raw Float versus wrapped numerical capability Javadoc. Verification: ./mvnw -o -B clean verify passed all 108 tests, including three
+new raw factory tests. The factory-backed raw demo printed expected forward,
+gradient and Hessian-vector results. Scalar Javadoc generation passed doclint
+syntax/link checks (missing-comment warnings excluded).
+
+
+## Factory-backed raw scalar behavior fixtures
+
+Migrated raw scalar fixtures in nine behavioral suites, including BackwardPassTest,
+parameter lifecycle and caching integration, to the FloatAutogradValueFactory
+interface. Deferred/cached suppliers use create(supplier, null, requiresGrad).
+Kept direct construction in the constructor-focused FloatAutogradValueTest and
+for the two implementation-only unary-helper receivers in NegationTest. Seeds and
+contributions in those helper tests use the factory. Assertions remain unchanged.
+Verification: ./mvnw -o -B clean verify passed all 108 tests.

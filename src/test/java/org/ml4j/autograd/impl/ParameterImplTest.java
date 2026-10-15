@@ -1,5 +1,10 @@
 package org.ml4j.autograd.impl;
 
+import org.ml4j.autograd.scalar.FloatAutogradValueFactory;
+
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+
 import org.junit.jupiter.api.Test;
 import org.ml4j.autograd.Parameter;
 import org.ml4j.autograd.scalar.FloatAutogradValue;
@@ -9,13 +14,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ParameterImplTest {
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
     @Test
     void constructionAndReplacementAreLazyAndPreserveLeafState() {
         var reads = new AtomicInteger();
-        var original = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 2f; }, true);
-        var replacement = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 3f; }, false);
-        var originalGradient = new FloatAutogradValue(5f, false);
-        var replacementGradient = new FloatAutogradValue(7f, false);
+        var original = rawFactory.create(() -> { reads.incrementAndGet(); return 2f; }, null, true);
+        var replacement = rawFactory.create(() -> { reads.incrementAndGet(); return 3f; }, null, false);
+        var originalGradient = rawFactory.create(5f, false);
+        var replacementGradient = rawFactory.create(7f, false);
         original.gradNode().accumulate(originalGradient);
         replacement.gradNode().accumulate(replacementGradient);
         var originalNode = original.valueNode();
@@ -41,7 +49,7 @@ class ParameterImplTest {
     @Test
     void invalidInitialAndReplacementValuesAreRejectedWithoutChangingTheHandle() {
         var reads = new AtomicInteger();
-        var leaf = new FloatAutogradValue(() -> { reads.incrementAndGet(); return 2f; }, true);
+        var leaf = rawFactory.create(() -> { reads.incrementAndGet(); return 2f; }, null, true);
         var binary = leaf.add(leaf);
         var unary = leaf.neg();
         assertThrows(NullPointerException.class, () -> new ParameterImpl<FloatAutogradValue>(null));
@@ -58,11 +66,11 @@ class ParameterImplTest {
 
     @Test
     void oldAndNewGraphsDifferentiateTheirOwnLeavesAfterReplacement() {
-        var original = new FloatAutogradValue(2f, true);
+        var original = rawFactory.create(2f, true);
         var parameter = new ParameterImpl<>(original);
         var oldValue = parameter.value();
         var oldGraph = oldValue.mul(oldValue);
-        var replacement = new FloatAutogradValue(3f, true);
+        var replacement = rawFactory.create(3f, true);
         parameter.replace(replacement);
         var newValue = parameter.value();
         var newGraph = newValue.mul(newValue);

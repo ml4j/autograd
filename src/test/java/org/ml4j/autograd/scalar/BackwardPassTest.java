@@ -1,5 +1,8 @@
 package org.ml4j.autograd.scalar;
 
+import org.ml4j.autograd.scalar.impl.FloatAutogradValueFactoryImpl;
+
+
 import org.junit.jupiter.api.Test;
 import org.ml4j.autograd.impl.AutogradValueImpl;
 import org.ml4j.autograd.node.ValueNode;
@@ -13,8 +16,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BackwardPassTest {
-    private FloatAutogradValue tracked(float value) { return new FloatAutogradValue(value, true); }
-    private FloatAutogradValue seed(float value) { return new FloatAutogradValue(value, false); }
+    private final FloatAutogradValueFactory rawFactory =
+            new FloatAutogradValueFactoryImpl();
+
+    private FloatAutogradValue tracked(float value) { return rawFactory.create(value, true); }
+    private FloatAutogradValue seed(float value) { return rawFactory.create(value, false); }
     private float gradient(FloatAutogradValue value) {
         return value.gradNode().gradient().orElseThrow().data().get();
     }

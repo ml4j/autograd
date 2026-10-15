@@ -8,6 +8,9 @@ import org.ml4j.autograd.arithmetic.DifferentiableArithmeticOperations;
 /**
  * A differentiable scalar whose numerical data implements FloatWrapper arithmetic.
  *
+ * <p>Unlike {@link FloatAutogradValue}, numerical reads return a wrapper and shared
+ * arithmetic, activation and math capabilities supply operation defaults.
+ *
  * <p>Data reads return wrappers; floatValue() on those wrappers reads the primitive
  * scalar. Void context means no shape metadata is needed. Shared arithmetic, activation and
  * math defaults supply operation rules; implementations supply graph machinery.
