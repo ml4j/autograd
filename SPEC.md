@@ -1066,3 +1066,17 @@ create(float, boolean). scalar.impl.FloatAutogradValueFactoryImpl delegates to
 constructors, creating independent leaves without evaluating suppliers. No operation
 result construction moves into the factory. Clients replace direct construction
 with the implementation or factory; behavior and derivative semantics are unchanged.
+
+
+## Successful backward completion hook
+
+AutogradValueImpl provides protected void afterBackward(List<ValueNode<?>> visitedNodes),
+a default no-op called once on the root after successful propagation and restoration
+of previous leaf gradients. Both implicit and explicit seed paths use the hook.
+It receives an unmodifiable copy of the existing identity-deduplicated original
+graph traversal in root-first propagation order, including constants and leaves,
+not newly built derivative nodes. No second graph traversal or numerical evaluation
+is introduced. Validation, propagation or restoration failures skip the hook; hook
+exceptions propagate with completed gradient changes retained (no rollback).
+Subclasses may inspect completed totals for backend integration without adding
+backend concepts to shared contracts.

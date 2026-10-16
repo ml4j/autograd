@@ -786,3 +786,15 @@ interfaces, dependencies, native-gradient suppliers or backend concepts introduc
 Changes are limited to autograd; no artifacts installed or commits made. The
 corresponding tensor-base constructor and DJL gradient-node integration are later
 increments, not implemented here.
+
+
+## Successful backward completion hook
+
+- [x] Add protected no-op afterBackward(List<ValueNode<?>> visitedNodes) on the root.
+- [x] Invoke after propagation and previous-leaf-gradient restoration, using an
+  unmodifiable copy of the existing traversal; no second graph walk or numerical reads.
+- [x] Test final restored totals, duplicate-node identity, constants, implicit/explicit
+  seeds, repeated calls, lazy data, failed propagation and hook exception behavior.
+
+Verification: ./mvnw -B -o clean verify passed 118 tests, zero failures/errors/skips.
+No artifacts installed, commits made or DJL integration changes in this increment.

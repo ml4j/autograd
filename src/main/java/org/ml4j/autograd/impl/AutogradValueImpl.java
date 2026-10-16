@@ -284,6 +284,24 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
         }
         // Restore previous leaves AFTER propagation, preventing stale contributions from running again.
         restoreLeaves.forEach(Runnable::run);
+        afterBackward(List.copyOf(order));
+    }
+
+    /**
+     * Called on the root after propagation and restoration of previous leaf gradients.
+     * For example, a backend can inspect final leaf totals using the already visited
+     * nodes instead of traversing the graph again. The default implementation does nothing.
+     *
+     * <p>Called once for a successful implicit- or explicit-seed pass. Earlier failures
+     * skip this hook. Exceptions from overrides propagate without rolling back gradients.
+     * The shared implementation does not evaluate numerical data for this hook.
+     *
+     * @param visitedNodes unmodifiable, identity-deduplicated original graph nodes in
+     *                     root-first propagation order, including constants and leaves;
+     *                     newly constructed derivative nodes are excluded
+     */
+    protected void afterBackward(List<ValueNode<?>> visitedNodes) {
+        // Default: no action.
     }
 
     /** Retains typed gradient references for restoration without mutating earlier expressions. */
