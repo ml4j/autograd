@@ -766,3 +766,23 @@ for tracked inputs and constants. Remove the constructor helper; preserve arithm
 and printed forward/gradient values.
 Verification: `./mvnw -o -B clean verify` passed all 108 tests. Running
 AutogradDemo printed the expected 24.704082, 138.83382 and 645.5772.
+
+
+## Extensible and supplied gradient nodes
+
+- [x] Make GradNodeImpl non-final. Document equivalent lazy read views and the
+  requirement to preserve absence/zero, numerical stability and derivative graphs.
+- [x] Add a protected AutogradValueImpl constructor accepting a non-null GradNode
+  after the existing inputs argument. Preserve the original constructor/default
+  accumulator and final stable gradNode() accessor; do not call subclass/node hooks
+  or evaluate numerical data during construction.
+- [x] Verify supplied-node identity, independent defaults, null rejection, inherited
+  raw accumulation/reset, lazy view reads, duplicate/shared contributions, frozen
+  inputs, repeated passes, retained values and higher derivatives.
+
+Verification: `./mvnw -B -o clean verify` passed all 114 tests (six new extension
+checks), zero failures/errors/skips on JDK 25. Whitespace checks passed. No new
+interfaces, dependencies, native-gradient suppliers or backend concepts introduced.
+Changes are limited to autograd; no artifacts installed or commits made. The
+corresponding tensor-base constructor and DJL gradient-node integration are later
+increments, not implemented here.

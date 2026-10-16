@@ -18,9 +18,16 @@ import java.util.Optional;
  * earlier gradient values. Data evaluation and compatibility checks belong to
  * the value's addition operation. Instances are not thread-safe.
  *
+ * <p>Subclasses may override {@link #gradient()} to expose an equivalent lazy view
+ * of {@code super.gradient()}. Preserve absence versus zero, stable numerical
+ * contents/context and any derivative dependencies. Reading must not evaluate data.
+ * Inherited accumulation/reset operate on the private stored expression directly,
+ * without calling the overridden accessor. Subclasses owning additional cached
+ * views must keep them consistent when that expression changes or is reset.
+ *
  * @param <V> the gradient value type, supporting non-mutating addition
  */
-public final class GradNodeImpl<V extends Value<?, ?> & Accumulatable<V>> implements GradNode<V> {
+public class GradNodeImpl<V extends Value<?, ?> & Accumulatable<V>> implements GradNode<V> {
 
     private V gradient;
 

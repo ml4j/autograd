@@ -306,7 +306,7 @@ This note describes the reference implementation, not the new library's contract
 
 ## Implementation: `org.ml4j.autograd.node.impl.GradNodeImpl<V>`
 
-- A final implementation with an initially absent gradient and no constructor-time evaluation.
+- An extensible implementation with an initially absent gradient and no constructor-time evaluation.
 - Holds the first contribution directly; combines later contributions through `current.add(contribution)`.
 - Validates the contribution and sum before replacing state. Addition failures and null
   sums preserve the previous reference, relying on the non-mutating addition contract.
@@ -316,12 +316,25 @@ This note describes the reference implementation, not the new library's contract
 - Tested with a small immutable accumulatable fixture; `FloatValue` and interface contracts
   remain unchanged. No additional dependencies were introduced.
 
+Subclasses may override gradient() and expose an equivalent lazy view of
+super.gradient(), preserving absence versus zero, stable data/context, and
+derivative dependencies where applicable. Reads must not evaluate numerical data.
+Inherited accumulate/reset work directly on the private stored expression and do
+not invoke the overridden accessor. Additional cached views must track changes to
+that expression and reset without mutating previously returned values.
+
 ## Implementation: generic autograd structure and float demonstration
 
 - `org.ml4j.autograd.impl.AutogradValueImpl<V, D, C>` owns stable value and gradient
   nodes, numerical data access, context, and gradient requirements.
 - Its value node uses a deferred `self()` reference; no subclass hook is invoked
   during base construction. Subclasses consistently return their concrete instance.
+- The original four-argument constructor creates an independent GradNodeImpl.
+  A protected five-argument overload accepts a non-null GradNode<V> after inputs
+  and retains that exact node; gradNode() remains final and returns the stable
+  supplied handle. Callers provide an independent, initially empty node per value.
+  Construction does not inspect, reset or otherwise call the node or evaluate data.
+  This is backend-neutral constructor injection, not native-gradient selection.
 - Generic binary construction delegates numerical operations, context mapping, and result
   construction to concrete hooks. Context is mapped once; data evaluation is deferred.
 - Results preserve ordered operand nodes, repeated operands, and the combined

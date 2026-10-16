@@ -65,13 +65,34 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
      */
     protected AutogradValueImpl(Supplier<D> data, C context, boolean requiresGrad,
                                 List<? extends ValueNode<?>> inputs) {
+        this(data, context, requiresGrad, inputs, new GradNodeImpl<>());
+    }
+
+    /**
+     * Creates a value using the supplied gradient-state implementation.
+     *
+     * <p>A numerical backend can supply a gradient node exposing equivalent lazy
+     * gradient views while keeping its own data selection outside this library.
+     * The exact node is retained for this value's lifetime. Supply an independent,
+     * initially empty node for each value; this constructor does not inspect, reset
+     * or invoke it, evaluate data, or call subclass hooks.
+     *
+     * @param data a supplier of stable, non-null numerical data
+     * @param context stable metadata, or null when none is needed
+     * @param requiresGrad whether differentiation should calculate a gradient
+     * @param inputs ordered operands, empty for a leaf
+     * @param gradNode non-null gradient state preserving the GradNode contract
+     * @throws NullPointerException if data, inputs, an input node or gradNode is null
+     */
+    protected AutogradValueImpl(Supplier<D> data, C context, boolean requiresGrad,
+                                List<? extends ValueNode<?>> inputs, GradNode<V> gradNode) {
+        this.gradNode = Objects.requireNonNull(gradNode, "gradNode");
         Supplier<D> source = Objects.requireNonNull(data, "data");
         this.data = () -> Objects.requireNonNull(source.get(), "numerical data");
         this.context = context;
         this.requiresGrad = requiresGrad;
         // The supplier defers the subclass hook until the node's represented value is read.
         this.valueNode = new ValueNodeImpl<>(this::self, inputs);
-        this.gradNode = new GradNodeImpl<>();
     }
 
     /**
