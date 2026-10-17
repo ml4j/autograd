@@ -192,18 +192,39 @@ void reset();
 - The accumulator has no graph-input or backward-execution responsibilities. A
   differentiable gradient value can have its own computation node.
 
+## Agreed interface: `org.ml4j.autograd.AutogradOperations<V>`
+
+Purpose: expose gradient tracking and graph-wide backward operations independently
+of numerical data access, arithmetic, and node access. The gradient type `V` is
+unbounded; this capability introduces no self-type or numerical-type requirement.
+
+```java
+boolean requiresGrad();
+void setRequiresGrad(boolean enabled);
+void backward();
+void backward(V gradient);
+```
+
+These methods retain the existing AutogradValue behaviour documented below:
+leaf-only tracking changes, compatible non-null seeds, numerical-type implicit
+seeds, sequential traversal, accumulation, derivative recording, graph retention,
+and failure rules. AutogradValue extends AutogradOperations<V> and inherits these
+four methods rather than redeclaring them. Existing implementations and callers
+retain their behaviour; this extraction adds no mutation or editing capability.
+
 ## Agreed interface: `org.ml4j.autograd.AutogradValue<V, D, C>`
 
 Purpose: connect numerical values to their computation and gradient nodes and provide
-graph-wide backward entry points. Extends `Value<D, C>` and `Accumulatable<V>`, with
+graph-wide backward entry points. Extends `Value<D, C>`, `Accumulatable<V>`, and `AutogradOperations<V>`, with
 the self-type bound `V extends AutogradValue<V, D, C>`. Gradients use the same concrete
 value type, so gradient expressions can have their own computation graphs.
 
 ```java
 ValueNode<V> valueNode();
 GradNode<V> gradNode();
+// Inherited from AutogradOperations<V>:
 boolean requiresGrad();
-void setRequiresGrad(boolean requiresGrad);
+void setRequiresGrad(boolean enabled);
 void backward(V gradient);
 void backward();
 ```

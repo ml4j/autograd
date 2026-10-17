@@ -33,7 +33,7 @@ import org.ml4j.autograd.node.ValueNode;
  * @param <C> the context type, such as shape/size or Void when no metadata is needed
  */
 public interface AutogradValue<V extends AutogradValue<V, D, C>, D, C>
-        extends Value<D, C>, Accumulatable<V> {
+        extends Value<D, C>, Accumulatable<V>, AutogradOperations<V> {
 
     /**
      * Returns the node describing this value's computation and inputs.
@@ -59,85 +59,4 @@ public interface AutogradValue<V extends AutogradValue<V, D, C>, D, C>
      */
     GradNode<V> gradNode();
 
-    /**
-     * Indicates whether differentiation should calculate a gradient for this value.
-     *
-     * <p>A constant scalar or tensor may have a computation node while returning
-     * false. Returning true requests gradient calculation; it does not imply that
-     * a gradient has already been calculated.
-     *
-     * @return whether this value requires a gradient
-     */
-    boolean requiresGrad();
-
-    /**
-     * Changes whether future graphs calculate this leaf's gradient.
-     *
-     * <p>For example, a scalar or tensor parameter can enable tracking before
-     * building a training graph and disable it before building an inference graph.
-     * Only leaves (values with no graph inputs) can change this flag. Set it before
-     * constructing the next graph; do not change it while a graph involving this
-     * leaf is still needed for backward or higher derivatives.
-     *
-     * <p>Existing operation results keep their original gradient requirements.
-     * Numerical data, context, graph nodes, and stored gradients are unchanged;
-     * clearing a gradient requires an explicit gradient-node reset. The implementation
-     * does not detect outstanding graphs or support concurrent toggling/backward.
-     *
-     * @param requiresGrad whether future differentiation should calculate this leaf's gradient
-     * @throws IllegalStateException if this value has graph inputs, even if the flag is unchanged
-     */
-    void setRequiresGrad(boolean requiresGrad);
-
-    /**
-     * Propagates a supplied seed gradient through this value's reachable graph.
-     *
-     * <p>A scalar seed of one differentiates the scalar result itself. For a tensor
-     * result, a compatible tensor seed specifies the incoming gradient. Seed shape
-     * and context compatibility follow the concrete numerical type's rules.
-     *
-     * <p>Shared nodes are visited once by node identity, after all downstream
-     * contributions arrive. Duplicate operand positions still contribute separately.
-     * Each pass propagates only its new contributions: gradients of leaves (nodes
-     * with no inputs) accumulate across passes; intermediate gradients are replaced.
-     * Constants receive no contributions from the pass. Reset leaf gradient nodes
-     * explicitly to discard previous contributions.
-     *
-     * <p>Gradient computations retain differentiable dependencies for higher derivatives;
-     * constant derivative expressions need not require gradients themselves. Gradient
-     * value identity is not guaranteed, while gradient-node identity remains stable.
-     * Existing gradient values and their graphs are not mutated by replacement.
-     * This records derivative computations as with {@code createGraph = true};
-     * no detached-gradient mode is provided.
-     *
-     * <p>The original graph remains available for another pass: backward does not
-     * release its inputs, callbacks, or numerical suppliers. This serves the purpose
-     * of {@code keepGraph}/{@code retainGraph}, independently of derivative recording.
-     * Resetting a gradient node clears its held reference, not forward graph state
-     * or previously returned expressions. Unreachable objects can still be garbage
-     * collected. These policies do not change lazy forward evaluation.
-     *
-     * <p>Execution is sequential; concurrent passes over shared values are unsupported.
-     * Callback failures may leave partially updated gradient state; no rollback is
-     * guaranteed. Graph-wide coordination is distinct from {@link ValueNode#backward()}.
-     *
-     * @param gradient a non-null seed compatible with this value's numerical data and context
-     * @throws NullPointerException if the seed is null
-     * @throws IllegalStateException if this value does not require gradients or its graph contains a cycle
-     */
-    void backward(V gradient);
-
-    /**
-     * Runs a backward pass using this numerical type's implicit seed.
-     *
-     * <p>A float scalar uses one. Tensor types must define their own implicit seed
-     * policy, or require callers to use the explicit-seed overload.
-     *
-     * <p>The derivative-recording, graph-retention, traversal, accumulation, and failure rules are the same as for
-     * {@link #backward(AutogradValue)}.
-     *
-     * @throws UnsupportedOperationException if this type does not define an implicit seed
-     * @throws IllegalStateException if this value does not require gradients or its graph contains a cycle
-     */
-    void backward();
 }

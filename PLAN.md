@@ -798,3 +798,16 @@ increments, not implemented here.
 
 Verification: ./mvnw -B -o clean verify passed 118 tests, zero failures/errors/skips.
 No artifacts installed, commits made or DJL integration changes in this increment.
+
+
+## Extract autograd operations capability
+
+Introduce AutogradOperations<V> with requiresGrad(), setRequiresGrad(boolean enabled),
+backward(), and backward(V gradient). AutogradValue extends it and inherits the four
+methods. Preserve all existing tracking and backward contracts and move their Javadoc
+with the declarations. No implementation or numerical-mutation behaviour changes.
+
+Status: complete. SPEC.md records the capability contract. A focused test exercises
+tracking, both backward overloads, accumulation and invalid calls through the new
+interface. `./mvnw verify` passed all 119 tests with no failures, errors or skips.
+Changes remain within this repository; no downstream build or artifact installation.
