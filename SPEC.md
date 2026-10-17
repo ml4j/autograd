@@ -203,6 +203,7 @@ boolean requiresGrad();
 void setRequiresGrad(boolean enabled);
 void backward();
 void backward(V gradient);
+void resetGradient();
 ```
 
 These methods retain the existing AutogradValue behaviour documented below:
@@ -211,6 +212,15 @@ seeds, sequential traversal, accumulation, derivative recording, graph retention
 and failure rules. AutogradValue extends AutogradOperations<V> and inherits these
 four methods rather than redeclaring them. Existing implementations and callers
 retain their behaviour; this extraction adds no mutation or editing capability.
+
+`resetGradient()` clears only the receiver's accumulated gradient to absence,
+not a present zero. It is idempotent and does not evaluate numerical data or reset
+other values in the graph. It preserves numerical contents, context, tracking,
+node identity, graph state and previously returned gradient expressions. It does
+not release graph data or native resources. AutogradValue supplies a default
+implementation delegating to gradNode().reset(); tensor wrappers delegate to their
+wrapped value. Adding this abstract method requires direct AutogradOperations
+implementations to supply it. Tensor adapter changes are a separate increment.
 
 ## Agreed interface: `org.ml4j.autograd.AutogradValue<V, D, C>`
 
@@ -227,6 +237,8 @@ boolean requiresGrad();
 void setRequiresGrad(boolean enabled);
 void backward(V gradient);
 void backward();
+// Default implementation delegates to gradNode().reset():
+void resetGradient();
 ```
 
 - `valueNode()` returns a non-null node representing this value and its inputs.
@@ -737,8 +749,10 @@ Sequential use only. Tensor/GPT integration remains a separate migration increme
 ### Tensor migration decision: gradient access and reset
 
 Tensor callers will replace legacy grad() (nullable) with gradNode().gradient()
-(Optional), and resetGradient() with gradNode().reset(). No legacy aliases are added
-in the core. The gradient node is the stable handle; its stored expression can change.
+(Optional). The earlier decision to replace resetGradient() with gradNode().reset()
+is superseded: AutogradOperations now exposes resetGradient(), and AutogradValue
+delegates it to gradNode().reset(). Tensor wrappers should delegate resetGradient()
+to their wrapped value; existing direct node resets remain valid. The gradient node is the stable handle; its stored expression can change.
 Previously returned gradient values do not refresh after another pass. Callers read
 the handle again for the latest gradient and handle absence explicitly. This records
 the migration choice only; tensor callers remain unchanged in this increment.

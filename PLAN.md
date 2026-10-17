@@ -811,3 +811,18 @@ Status: complete. SPEC.md records the capability contract. A focused test exerci
 tracking, both backward overloads, accumulation and invalid calls through the new
 interface. `./mvnw verify` passed all 119 tests with no failures, errors or skips.
 Changes remain within this repository; no downstream build or artifact installation.
+
+
+## Receiver-local gradient reset capability
+
+Add resetGradient() to AutogradOperations and a default AutogradValue implementation
+that delegates to gradNode().reset(). Reset clears only the receiver's gradient to
+absence, is idempotent and lazy, preserves retained expressions and graph state,
+and does not release graph data or native resources. This supersedes the earlier
+node-only reset API decision; tensor wrappers should delegate to their wrapped value.
+
+Status: complete. Updated specification and Javadoc. Two focused tests cover local
+reset on leaves/results, absent gradients, unchanged tracking/node identity, deferred
+data, graph reuse and retained higher derivatives. `./mvnw verify` passed all 121
+tests with no failures, errors or skips. Tensor adapter implementation and downstream
+verification remain outside this repository increment; no artifact installation.

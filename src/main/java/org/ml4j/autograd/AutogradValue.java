@@ -59,4 +59,14 @@ public interface AutogradValue<V extends AutogradValue<V, D, C>, D, C>
      */
     GradNode<V> gradNode();
 
+    /**
+     * Clears this value's accumulated gradient through its gradient node.
+     *
+     * <p>Delegates to {@code gradNode().reset()}, preserving the node and all
+     * other state as specified by {@link AutogradOperations#resetGradient()}.
+     */
+    @Override
+    default void resetGradient() {
+        gradNode().reset();
+    }
 }

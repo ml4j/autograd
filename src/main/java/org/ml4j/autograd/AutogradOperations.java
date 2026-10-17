@@ -35,7 +35,7 @@ public interface AutogradOperations<V> {
      *
      * <p>Existing operation results keep their original gradient requirements.
      * Numerical data, context, graph nodes, and stored gradients are unchanged;
-     * clearing a gradient requires an explicit gradient-node reset. The implementation
+     * clearing a gradient requires an explicit {@link #resetGradient()} call. The implementation
      * does not detect outstanding graphs or support concurrent toggling/backward.
      *
      * @param enabled whether future differentiation should calculate this leaf's gradient
@@ -94,4 +94,16 @@ public interface AutogradOperations<V> {
      * @throws IllegalStateException if this value does not require gradients or its graph contains a cycle
      */
     void backward();
+    /**
+     * Clears only this value's accumulated gradient.
+     *
+     * <p>For a scalar or tensor, the gradient becomes absent rather than a present
+     * zero. Other values in the graph keep their gradients. Repeated resets have
+     * no additional effect and do not evaluate numerical data.
+     *
+     * <p>Numerical contents, context, tracking, node identity, graph state, and
+     * previously returned gradient expressions are preserved. This operation does
+     * not release graph data or native resources and does not reset an entire graph.
+     */
+    void resetGradient();
 }
