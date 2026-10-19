@@ -530,8 +530,7 @@ invalidation, or cache-state methods. Sequential use only; no thread-safety guar
 Callers must preserve cached numerical contents to satisfy Value stability. It performs
 no native-resource cleanup. Tensor adapters can opt in to cache random generation or
 native-array allocation; the core base class still leaves caching optional. This class
-implements Supplier, not the DataSupplier owner capability. The legacy clearCache()
-contract is not restored.
+implements Supplier, not the DataSupplier owner capability.
 
 ## Implementation diagnostics: operation origins
 
@@ -553,8 +552,7 @@ failures are forward-evaluation failures of the gradient expression itself.
 
 ## Backend boundaries
 
-Core has no tensor-library, registry, native-gradient selection, BackwardConfig or
-AutogradValueProperties dependency. Parameter names belong to model metadata such as
+Core is independent of tensor libraries. Parameter names belong to model metadata such as
 Map<String,Parameter<T>> and remain associated with handles across replacement.
 Numerical in-place operations and copy/mapped-value constructors are not provided.
 Backward discovers dependencies through nodes, not global registration.
