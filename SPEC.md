@@ -1147,3 +1147,22 @@ is introduced. Validation, propagation or restoration failures skip the hook; ho
 exceptions propagate with completed gradient changes retained (no rollback).
 Subclasses may inspect completed totals for backend integration without adding
 backend concepts to shared contracts.
+
+
+## Implementation diagnostics: operation origins
+
+AutogradValueImpl captures one construction stack per shared unary, binary or
+constant operation, reused for lazy data evaluation and the entire local backward
+callback (including accumulation). Leaf suppliers capture their own origin.
+RuntimeExceptions retain their identity and type; the first failing boundary adds
+a private origin marker as a suppressed exception. Enclosing boundaries do not add
+more markers. Suppression-disabled exceptions remain unchanged. Errors are not caught.
+Evaluation remains lazy and uncached. Context mapping and graph-wide coordination
+are outside these boundaries. Stack capture is currently always enabled and costs
+time and retained memory; configurable diagnostics are deferred. No interface changes.
+
+Origin diagnostic messages identify forward evaluation, unary gradient, left gradient,
+right gradient, or the remaining backward callback. Gradient labels include both
+rule execution and accumulation. Phase-specific diagnostics reuse the captured
+construction stack and do not change the first-origin policy. Lazy gradient data
+failures are forward-evaluation failures of the gradient expression itself.

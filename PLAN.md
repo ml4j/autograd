@@ -849,3 +849,25 @@ Status: complete. ./mvnw verify passed all 126 tests with no failures, errors or
 skips. New tests cover absent/zero gradients, deferred reads, accumulation, reset
 and retained higher derivatives through the capability. No tensor adapter implementation
 or downstream verification in this increment.
+
+
+## Operation construction diagnostics
+
+Centralize construction-origin capture and exception annotation in private helpers
+inside AutogradValueImpl. Share each operation's origin between forward evaluation
+and the entire local backward callback; preserve lazy/non-cached data and original
+RuntimeException identity. Attach only the first origin marker. Leaves and constant
+operations are covered; diagnostic configuration remains deferred.
+
+Status: complete. ./mvnw verify passed all 130 tests, including four new diagnostic
+tests covering nested/repeated failures, null forward results, unary derivative
+failures, binary accumulation failures and lazy gradient data. No dependencies or
+public interfaces added. No downstream build or artifact installation performed.
+
+## Phase labels for operation diagnostics
+
+Added phase labels for forward evaluation, unary/left/right gradient calculation
+and accumulation, plus the remaining backward callback. Each failure diagnostic
+reuses the operation construction stack; no extra construction stacks are captured.
+Verification after removal of the temporary injected failure: ./mvnw verify passed
+all 131 tests, including five diagnostic tests, with no failures, errors or skips.

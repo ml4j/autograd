@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -40,6 +41,10 @@ import java.util.function.UnaryOperator;
  * remain reusable while reachable. Neither derivative recording nor graph retention
  * has a configuration flag. First-order training, tensor memory pressure, saved-buffer
  * release, or limited derivative support may motivate a future contract discussion.
+ *
+ * <p>Runtime evaluation and local backward failures retain their exception identity
+ * and receive one suppressed construction trace at the first failing boundary.
+ * Construction stacks are always captured; this adds time and memory overhead.
  *
  * @param <V> the concrete autograd value type
  * @param <D> the numerical data type
@@ -88,11 +93,63 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
                                 List<? extends ValueNode<?>> inputs, GradNode<V> gradNode) {
         this.gradNode = Objects.requireNonNull(gradNode, "gradNode");
         Supplier<D> source = Objects.requireNonNull(data, "data");
-        this.data = () -> Objects.requireNonNull(source.get(), "numerical data");
+        this.data = source instanceof OriginSupplier<?> ? source : new OriginSupplier<>(source);
         this.context = context;
         this.requiresGrad = requiresGrad;
         // The supplier defers the subclass hook until the node's represented value is read.
         this.valueNode = new ValueNodeImpl<>(this::self, inputs);
+    }
+
+    // Carries the same origin through the result constructor without capturing twice.
+    private static final class OriginSupplier<T> implements Supplier<T> {
+        private final Supplier<T> source;
+        private final OperationOrigin origin = new OperationOrigin();
+
+        private OriginSupplier(Supplier<T> source) { this.source = source; }
+
+        @Override public T get() {
+            try {
+                return Objects.requireNonNull(source.get(), "numerical data");
+            } catch (RuntimeException failure) {
+                throw origin.annotate(failure, "forward evaluation");
+            }
+        }
+
+        private void gradient(String phase, Runnable action) {
+            try {
+                action.run();
+            } catch (RuntimeException failure) {
+                throw origin.annotate(failure, phase);
+            }
+        }
+
+        private <R> Consumer<R> backward(Consumer<R> callback) {
+            return value -> {
+                try {
+                    callback.accept(value);
+                } catch (RuntimeException failure) {
+                    throw origin.annotate(failure, "backward callback");
+                }
+            };
+        }
+    }
+
+    private static final class OperationOrigin extends Throwable {
+        private OperationOrigin() { super("Autograd value/operation constructed here"); }
+        private OperationOrigin(String message) { super(message); }
+
+        private RuntimeException annotate(RuntimeException failure, String phase) {
+            for (Throwable suppressed : failure.getSuppressed()) {
+                if (suppressed instanceof OperationOrigin) {
+                    return failure;
+                }
+            }
+            var diagnostic = new OperationOrigin("Autograd failure during " + phase
+                    + "; operation constructed here");
+            diagnostic.setStackTrace(getStackTrace());
+            failure.addSuppressed(diagnostic);
+            return failure;
+        }
     }
 
     /**
@@ -160,22 +217,25 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
         Objects.requireNonNull(rightGradient, "rightGradient");
         Objects.requireNonNull(contextMapper, "contextMapper");
         C outputContext = contextMapper.apply(context(), other.context());
-        V result = createAutogradValue(() -> forward.apply(data().get(), other.data().get()),
+        var operation = new OriginSupplier<D>(() -> forward.apply(data().get(), other.data().get()));
+        V result = createAutogradValue(operation,
                 outputContext, requiresGrad() || other.requiresGrad(), List.of(valueNode(), other.valueNode()));
-        result.valueNode().setBackwardFunction(resultValue -> {
+        result.valueNode().setBackwardFunction(operation.backward(resultValue -> {
             if (!resultValue.requiresGrad()) {
                 return;
             }
             resultValue.gradNode().gradient().ifPresent(incomingGradient -> {
                 if (requiresGrad()) {
-                    gradNode().accumulate(leftGradient.apply(incomingGradient, self(), other));
+                    operation.gradient("left gradient calculation/accumulation", () ->
+                            gradNode().accumulate(leftGradient.apply(incomingGradient, self(), other)));
                 }
                 if (other.requiresGrad()) {
                     // Duplicate operands still have two derivative rules and two contributions.
-                    other.gradNode().accumulate(rightGradient.apply(incomingGradient, self(), other));
+                    operation.gradient("right gradient calculation/accumulation", () ->
+                            other.gradNode().accumulate(rightGradient.apply(incomingGradient, self(), other)));
                 }
             });
-        });
+        }));
         return result;
     }
 
@@ -206,14 +266,16 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
         Objects.requireNonNull(gradient, "gradient");
         Objects.requireNonNull(contextMapper, "contextMapper");
         C outputContext = contextMapper.apply(context());
-        V result = createAutogradValue(() -> forward.apply(data().get()),
+        var operation = new OriginSupplier<D>(() -> forward.apply(data().get()));
+        V result = createAutogradValue(operation,
                 outputContext, requiresGrad(), List.of(valueNode()));
-        result.valueNode().setBackwardFunction(resultValue -> {
+        result.valueNode().setBackwardFunction(operation.backward(resultValue -> {
             if (resultValue.requiresGrad() && requiresGrad()) {
                 resultValue.gradNode().gradient().ifPresent(incomingGradient ->
-                        gradNode().accumulate(gradient.apply(incomingGradient, self())));
+                        operation.gradient("unary gradient calculation/accumulation", () ->
+                                gradNode().accumulate(gradient.apply(incomingGradient, self()))));
             }
-        });
+        }));
         return result;
     }
 
@@ -233,7 +295,7 @@ public abstract class AutogradValueImpl<V extends AutogradValue<V, D, C>, D, C>
         Objects.requireNonNull(forward, "forward");
         Objects.requireNonNull(contextMapper, "contextMapper");
         C outputContext = contextMapper.apply(context());
-        return createAutogradValue(() -> forward.apply(data().get()),
+        return createAutogradValue(new OriginSupplier<D>(() -> forward.apply(data().get())),
                 outputContext, false, List.of());
     }
 
