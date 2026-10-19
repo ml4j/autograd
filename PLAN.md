@@ -683,7 +683,7 @@ Native tensor tests required cache access. These are historical results, not new
 verification of future changes. Both relocated scalar demos were also run successfully.
 
 The detailed questions and existing limitations are recorded in SPEC.md under
-"Open decisions for continuing autograd work (2026-10-14)". No next implementation
+"Open decisions". No next implementation
 has been selected or authorized:
 
 - [ ] Agree shared reduction/context contracts and then softmax placement/dependencies.
@@ -871,3 +871,15 @@ and accumulation, plus the remaining backward callback. Each failure diagnostic
 reuses the operation construction stack; no extra construction stacks are captured.
 Verification after removal of the temporary injected failure: ./mvnw verify passed
 all 131 tests, including five diagnostic tests, with no failures, errors or skips.
+
+
+## Specification consolidation
+
+Condensed SPEC.md into current contracts, shared implementation behaviour, backend
+boundaries and unresolved decisions. Removed superseded provisional signatures,
+legacy implementation notes and repeated migration/increment narratives; retained
+contract guarantees and current numerical limitations. Kept the existing
+differentiable capability hierarchy. Updated the open-decisions heading reference.
+
+Validation: documentation consistency review against current interfaces and shared
+implementations, plus whitespace checks. No source changes or build required.
