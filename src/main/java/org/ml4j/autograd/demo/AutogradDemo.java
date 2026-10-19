@@ -57,9 +57,9 @@ public final class AutogradDemo {
         // Perform a backward pass
         g.backward();
 
-        System.out.println(a.gradNode().gradient().orElseThrow().data().get().floatValue()); // Prints 138.83382, i.e. the numerical value of dg/da
+        System.out.println(a.gradient().orElseThrow().data().get().floatValue()); // Prints 138.83382, i.e. the numerical value of dg/da
 
-        System.out.println(b.gradNode().gradient().orElseThrow().data().get().floatValue()); // Prints 645.5772, i.e. the numerical value of dg/db
+        System.out.println(b.gradient().orElseThrow().data().get().floatValue()); // Prints 645.5772, i.e. the numerical value of dg/db
 
     }
 
