@@ -194,11 +194,12 @@ void reset();
 
 ## Agreed interface: `org.ml4j.autograd.AutogradOperations<V>`
 
-Purpose: expose gradient tracking and graph-wide backward operations independently
+Purpose: expose gradient access, tracking and graph-wide backward operations independently
 of numerical data access, arithmetic, and node access. The gradient type `V` is
 unbounded; this capability introduces no self-type or numerical-type requirement.
 
 ```java
+Optional<V> gradient();
 boolean requiresGrad();
 void setRequiresGrad(boolean enabled);
 void backward();
@@ -209,9 +210,10 @@ void resetGradient();
 These methods retain the existing AutogradValue behaviour documented below:
 leaf-only tracking changes, compatible non-null seeds, numerical-type implicit
 seeds, sequential traversal, accumulation, derivative recording, graph retention,
-and failure rules. AutogradValue extends AutogradOperations<V> and inherits these
-four methods rather than redeclaring them. Existing implementations and callers
-retain their behaviour; this extraction adds no mutation or editing capability.
+and failure rules. AutogradValue extends AutogradOperations<V>, inheriting tracking
+and backward methods and providing defaults for gradient access and reset.
+Existing tracking and backward behaviour is unchanged; gradient access adds no
+mutation or editing capability.
 
 `resetGradient()` clears only the receiver's accumulated gradient to absence,
 not a present zero. It is idempotent and does not evaluate numerical data or reset
@@ -221,6 +223,19 @@ not release graph data or native resources. AutogradValue supplies a default
 implementation delegating to gradNode().reset(); tensor wrappers delegate to their
 wrapped value. Adding this abstract method requires direct AutogradOperations
 implementations to supply it. Tensor adapter changes are a separate increment.
+
+`gradient()` returns a non-null Optional containing the receiver's current gradient,
+or empty when absent, including after reset. Absence differs from a present scalar
+zero or tensor of zeros. Reading does not evaluate numerical data or mutate state.
+Gradients must be compatible with the forward value's numerical data/context.
+Gradient object identity is not guaranteed; subsequent reads may expose replacement
+expressions, while previously returned values and their graphs remain unchanged.
+AutogradValue supplies a default delegating to gradNode().gradient(). Wrappers can
+implement AutogradOperations<Tensor> and return Optional<Tensor>, preserving
+absence and differentiable dependencies without exposing nodes. V remains unbounded
+and now describes both seed and returned gradient types. Direct AutogradOperations
+implementations must implement gradient(); AutogradValue implementations inherit
+its default. Tensor adapter implementation remains a separate increment.
 
 ## Agreed interface: `org.ml4j.autograd.AutogradValue<V, D, C>`
 
@@ -237,6 +252,8 @@ boolean requiresGrad();
 void setRequiresGrad(boolean enabled);
 void backward(V gradient);
 void backward();
+// Default implementation delegates to gradNode().gradient():
+Optional<V> gradient();
 // Default implementation delegates to gradNode().reset():
 void resetGradient();
 ```
@@ -711,40 +728,55 @@ contract is not restored. Tensor integration remains a separate migration increm
 
 ## Agreed interface: `org.ml4j.autograd.Parameter<V>`
 
-Purpose: hold a replaceable current autograd leaf through a stable parameter handle.
-The bound is V extends AutogradValue<V, ?, ?>.
+Purpose: hold a replaceable current value through a stable parameter handle.
+The type parameter V is unbounded, allowing numerical wrappers such as Tensor
+that expose an AutogradValue without implementing it.
 
 ```java
 V value();
 void replace(V value);
 ```
 
-- value() returns the non-null current leaf without numerical evaluation, with the
-  same identity until replacement. Leaves have empty graph-input lists.
-- replace selects the supplied leaf for future reads without numerical evaluation.
-  Null causes NullPointerException and graph inputs cause IllegalArgumentException;
-  invalid replacement preserves the current reference. Replacing with the current
-  leaf is permitted. Neither old nor new leaf's data, context, graph, gradient flag,
-  or stored gradient is modified. Fresh training steps should supply fresh leaves.
-- Callers provide values compatible with the model's numerical type and context
-  (including tensor shape); compatibility validation is implementation-defined.
-- Parameter is the mutable selection handle; Value numerical contents remain stable
-  for life. Forward graphs capture returned leaves rather than live parameter reads,
-  so previously built graphs retain old values after replacement.
+- value() returns the non-null current value without numerical evaluation, with
+  the same identity until replacement.
+- replace selects the supplied value for future reads without numerical evaluation.
+  Null causes NullPointerException; invalid replacement preserves the current reference.
+  Replacing with the current value is permitted. Replacement changes only the held
+  reference, preserving existing values, gradients and graphs.
+- Callers provide values compatible with the model's numerical type and context,
+  including tensor shape. Compatibility and leaf validation belong to implementations.
+- Graphs capture the selected autograd leaves rather than live parameter reads.
+  Wrappers must keep their represented numerical contents and leaf association stable
+  when used in graphs; replacement does not refresh earlier graph expressions.
 - Use sequentially. No arithmetic, optimizer, gradient storage, native-resource
   cleanup, or concurrent replacement/graph-construction contract is introduced.
-- This increment introduces only the interface and documentation. Concrete handle
-  implementation and tensor/GPT migration remain separate increments.
 
 ## Implementation: `org.ml4j.autograd.impl.ParameterImpl<V>`
 
-Final Parameter implementation constructed from a non-null autograd leaf. Constructor
-and replace validate empty graph-input lists without evaluating data. Validation
-completes before assignment, so rejected replacement preserves the current reference.
-value returns the held leaf; replacement changes only that reference. Existing values,
-gradients, and graphs remain unchanged. Model numerical/context compatibility is the
-caller's responsibility; no tensor shape validation or native-resource cleanup is added.
-Sequential use only. Tensor/GPT integration remains a separate migration increment.
+Final implementation with unbounded V and constructors:
+
+```java
+ParameterImpl(V value, Function<? super V, ? extends AutogradValue<?, ?, ?>> extractor)
+ParameterImpl(V value)
+```
+
+The two-argument constructor accepts direct autograd values or wrappers, for example
+scalar wrapper extraction or Tensor::autogradValue for a tensor with shape context.
+The extractor must return the stable represented autograd value without numerical
+evaluation or mutation. It is invoked once per non-null construction/replacement
+candidate, never by value(). The extractor, candidate and extracted result must be
+non-null; violations cause NullPointerException. Extracted values must have empty
+graph-input lists, otherwise IllegalArgumentException is thrown. Extractor exceptions
+propagate. Validation completes before assignment, preserving the current reference
+on failure; extractor side effects cannot be rolled back.
+
+The one-argument constructor uses direct extraction: candidates must themselves
+implement AutogradValue, otherwise IllegalArgumentException is thrown, including on
+later replacement. With unbounded V this requirement is checked at runtime.
+Neither constructor evaluates numerical data. Replacement changes only the held
+reference, preserving wrapped leaves, gradients and graphs. Numerical/context
+compatibility and native-resource ownership remain the caller's responsibility.
+Sequential use only.
 
 ### Tensor migration decision: gradient access and reset
 

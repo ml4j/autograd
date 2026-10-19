@@ -8,6 +8,41 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AutogradOperationsTest {
     @Test
+    void gradientReadsDistinguishAbsenceAndZeroWithoutEvaluatingData() {
+        var factory = new FloatAutogradValueFactoryImpl();
+        var reads = new java.util.concurrent.atomic.AtomicInteger();
+        var input = factory.create(() -> { reads.incrementAndGet(); return 3f; }, null, true);
+        var zero = factory.create(() -> { reads.incrementAndGet(); return 0f; }, null, false);
+        AutogradOperations<FloatAutogradValue> operations = input;
+        assertTrue(operations.gradient().isEmpty());
+        input.gradNode().accumulate(zero);
+        var retained = operations.gradient().orElseThrow();
+        assertSame(input.gradNode().gradient().orElseThrow(), retained);
+        assertEquals(0, reads.get());
+        assertEquals(0f, retained.data().get().floatValue());
+        operations.resetGradient();
+        assertTrue(operations.gradient().isEmpty());
+        assertEquals(1, reads.get());
+        assertEquals(0f, retained.data().get().floatValue());
+    }
+
+    @Test
+    void gradientReadsExposeAccumulationWhileRetainingHigherDerivatives() {
+        var factory = new FloatAutogradValueFactoryImpl();
+        var input = factory.create(3f, true);
+        var result = input.mul(input);
+        AutogradOperations<FloatAutogradValue> operations = input;
+        result.backward();
+        var retained = operations.gradient().orElseThrow();
+        result.backward();
+        assertEquals(12f, operations.gradient().orElseThrow().data().get().floatValue());
+        assertEquals(6f, retained.data().get().floatValue());
+        operations.resetGradient();
+        retained.backward();
+        assertEquals(2f, operations.gradient().orElseThrow().data().get().floatValue());
+    }
+
+    @Test
     void capabilitySupportsTrackingAndBothBackwardEntryPoints() {
         var factory = new FloatAutogradValueFactoryImpl();
         var input = factory.create(3f, false);

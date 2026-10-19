@@ -826,3 +826,26 @@ reset on leaves/results, absent gradients, unchanged tracking/node identity, def
 data, graph reuse and retained higher derivatives. `./mvnw verify` passed all 121
 tests with no failures, errors or skips. Tensor adapter implementation and downstream
 verification remain outside this repository increment; no artifact installation.
+
+
+## Generic parameter handles with autograd extraction
+
+Remove the Parameter<V> bound so clients can hold tensor wrappers. ParameterImpl<V>
+accepts an extraction function for leaf validation; retain the direct-value constructor
+with runtime AutogradValue checks. Preserve lazy access, leaf validation and atomic
+reference replacement on failure. Document extractor stability, nulls and exceptions.
+Status: complete. ./mvnw verify passed all 124 tests with no failures, errors
+or skips. Focused tests cover wrapper graph retention, extraction failures, deferred
+data and direct-constructor validation. No downstream project verification performed.
+
+
+## Gradient read capability
+
+Add Optional<V> gradient() to AutogradOperations and default delegation through
+AutogradValue.gradNode().gradient(). Preserve absent/zero distinctions, lazy reads,
+compatible gradients and retained derivative expressions; V remains unbounded for
+wrapper gradient types. Direct capability implementations must supply the accessor.
+Status: complete. ./mvnw verify passed all 126 tests with no failures, errors or
+skips. New tests cover absent/zero gradients, deferred reads, accumulation, reset
+and retained higher derivatives through the capability. No tensor adapter implementation
+or downstream verification in this increment.

@@ -2,16 +2,34 @@ package org.ml4j.autograd;
 
 import org.ml4j.autograd.node.ValueNode;
 
+import java.util.Optional;
+
 /**
- * Controls gradient tracking and runs graph-wide backward passes.
+ * Reads gradient state, controls tracking and runs graph-wide backward passes.
  *
  * <p>For example, enable tracking on a scalar or tensor leaf before building a
  * graph, then differentiate its result with an implicit or compatible explicit
  * seed. This capability requires no numerical-data, arithmetic, or node access API.
  *
- * @param <V> the seed gradient type
+ * @param <V> the seed and returned gradient type
  */
 public interface AutogradOperations<V> {
+
+    /**
+     * Returns this value's current gradient, if one is available.
+     *
+     * <p>An empty result means no gradient is held, including after reset. This
+     * differs from a present scalar zero or tensor of zeros with compatible shape.
+     * Reading does not evaluate numerical data or change state. The gradient must
+     * be compatible with this value's numerical data and context.
+     *
+     * <p>Later reads may return replacement expressions; no gradient object-identity
+     * guarantee is made. Previously returned gradient values and their computation
+     * graphs remain unchanged, preserving differentiable dependencies.
+     *
+     * @return a non-null optional containing the current gradient, or empty when absent
+     */
+    Optional<V> gradient();
 
     /**
      * Indicates whether differentiation should calculate a gradient for this value.

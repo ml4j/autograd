@@ -3,6 +3,8 @@ package org.ml4j.autograd;
 import org.ml4j.autograd.node.GradNode;
 import org.ml4j.autograd.node.ValueNode;
 
+import java.util.Optional;
+
 /**
  * Connects numerical data to its computation node and accumulated gradient state.
  *
@@ -58,6 +60,20 @@ public interface AutogradValue<V extends AutogradValue<V, D, C>, D, C>
      * @return the non-null gradient node owned by this value
      */
     GradNode<V> gradNode();
+
+    /**
+     * Returns the current gradient through this value's gradient node.
+     *
+     * <p>Delegates to {@code gradNode().gradient()} without evaluating numerical
+     * data, preserving absence and gradient expressions as specified by
+     * {@link AutogradOperations#gradient()}.
+     *
+     * @return a non-null optional containing the current gradient, or empty when absent
+     */
+    @Override
+    default Optional<V> gradient() {
+        return gradNode().gradient();
+    }
 
     /**
      * Clears this value's accumulated gradient through its gradient node.
