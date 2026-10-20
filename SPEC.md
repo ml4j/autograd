@@ -2,9 +2,12 @@
 
 ## Scope and change control
 
-Standalone Java 25 Maven automatic-differentiation library, independent of parent
-projects, sibling repositories and tensor backends. Scalar implementations validate
-contracts intended to support tensors with backend-defined shape/context rules.
+Generic Java 25 Maven automatic-differentiation library supporting numerical
+structures such as scalars, vectors, matrices and tensors, depending on the
+implementation. Implementations supply numerical operations and compatible context
+(such as shape); core graph and gradient contracts are shared across structures.
+The repository builds independently of parent projects, sibling repositories and
+tensor backends, and includes scalar implementations to demonstrate these contracts.
 Build and test with `./mvnw verify`; documentation-only edits need consistency review.
 `PLAN.md` records implementation history; this specification describes current contracts.
 

@@ -1,11 +1,14 @@
 # autograd
 
-A small automatic differentiation engine written in Java. It implements
-backpropagation (reverse-mode autodiff) over a dynamically built computation graph.
+A generic automatic differentiation library written in Java. It implements
+backpropagation (reverse-mode autodiff) over a dynamically built computation graph
+for numerical structures such as scalars, vectors, matrices or tensors, depending
+on the implementation.
 
 Inspired by Andrej Karpathy's [micrograd](https://github.com/karpathy/micrograd).
-The core contracts support different numerical data types; scalar implementations
-provide arithmetic examples, while separate tensor projects supply tensor backends.
+Implementations supply numerical operations and context such as tensor shape;
+the core is independent of numerical storage and backend libraries. This repository
+includes scalar implementations and examples.
 
 ## Example usage
 

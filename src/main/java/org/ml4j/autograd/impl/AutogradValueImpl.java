@@ -24,10 +24,10 @@ import java.util.function.UnaryOperator;
 /**
  * Provides shared node ownership and forward-operation construction for autograd values.
  *
- * <p>A float implementation supplies result construction and operation definitions,
- * either directly or through differentiable arithmetic interface defaults.
- * A future tensor implementation can supply tensor arithmetic and shape mapping
- * while using the same ordered graph inputs and gradient-state handles.
+ * <p>Implementations supply numerical operations, result construction and context
+ * mapping for structures such as scalars, vectors, matrices or tensors, either
+ * directly or through differentiable operation defaults. All structures use the
+ * same ordered graph inputs and gradient-state handles.
  *
  * <p>Each operation supplies its local derivative rules. Graph-wide passes order reachable
  * nodes by dependency, propagate new contributions, and retain previous leaf gradients.

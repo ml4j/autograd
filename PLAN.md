@@ -2,7 +2,9 @@
 
 ## Working approach
 
-Deliver small, reviewable increments in this standalone Java 25 Maven repository.
+Develop a generic automatic-differentiation library supporting numerical structures
+such as scalars or tensors through concrete implementations. Deliver small,
+reviewable increments in this standalone Java 25 Maven repository.
 Agree and document interface contracts in [SPEC.md](SPEC.md) before implementing
 changes, then add meaningful tests and validate the result. Established contracts
 require explicit user agreement before modification. Add dependencies only when needed.
